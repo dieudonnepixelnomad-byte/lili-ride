@@ -160,9 +160,9 @@ export default function ConnexionPage() {
               className="input"
               type="text"
               inputMode="numeric"
-              pattern="[0-9]{6}"
-              maxLength={6}
-              placeholder="123456"
+              pattern="[0-9]{8}"
+              maxLength={8}
+              placeholder="12345678"
               value={otp}
               onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
               required

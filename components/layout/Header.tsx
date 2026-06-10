@@ -36,7 +36,12 @@ export default function Header({ session }: { session?: boolean }) {
 
         <div className="header-actions">
           {session ? (
-            <Link href="/dashboard" className="btn btn-outline">Mon espace</Link>
+            <>
+              <Link href="/dashboard" className="btn btn-outline">Mon espace</Link>
+              <form method="POST" action="/api/auth/deconnexion" style={{ display: 'inline' }}>
+                <button type="submit" className="btn btn-ghost">Déconnexion</button>
+              </form>
+            </>
           ) : (
             <>
               <Link href="/connexion" className="btn btn-ghost">Connexion</Link>

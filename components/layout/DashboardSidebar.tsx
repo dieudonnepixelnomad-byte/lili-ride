@@ -94,10 +94,19 @@ export default function DashboardSidebar({ user }: Props) {
         <div className="avatar avatar-sm" style={{ background: 'var(--primary)' }}>
           {getInitials(user.nom)}
         </div>
-        <div>
+        <div style={{ flex: 1 }}>
           <div className="name">{user.nom}</div>
           <div className="sub">{user.ville}</div>
         </div>
+        <form method="POST" action="/api/auth/deconnexion">
+          <button type="submit" title="Déconnexion" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 4, display: 'flex', alignItems: 'center' }}>
+            <svg viewBox="0 0 20 20" fill="none" width={18} height={18}>
+              <path d="M7 3H4a1 1 0 00-1 1v12a1 1 0 001 1h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M13 14l3-4-3-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 10H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </button>
+        </form>
       </div>
     </aside>
   )
