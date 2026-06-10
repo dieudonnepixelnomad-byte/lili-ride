@@ -7,7 +7,7 @@ import Avatar from '@/components/shared/Avatar'
 import type { User, ProfilTransporteur } from '@/types'
 
 const VILLES = ['Douala', 'Yaoundé', 'Bafoussam', 'Autre']
-const TYPES_COLIS = ['documents', 'petit', 'volumineux', 'fragile']
+const TYPES_COLIS = ['documents', 'petit', 'volumineux', 'fragile'] as const
 const TYPES_VEHICULE = ['Berline', 'SUV', 'Minibus', 'Camionnette', 'Moto']
 
 export default function ProfilPage() {
