@@ -1,0 +1,104 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import type { User } from '@/types'
+
+interface Props {
+  user: User
+}
+
+const navItems = [
+  {
+    href: '/dashboard',
+    label: 'Tableau de bord',
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="3" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="11" y="3" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="3" y="11" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="11" y="11" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    ),
+    exact: true,
+  },
+  {
+    href: '/dashboard/mes-annonces',
+    label: 'Mes annonces',
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 5h14M3 10h10M3 15h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/publier',
+    label: 'Publier une annonce',
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M10 7v6M7 10h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/mes-demandes',
+    label: 'Mes demandes',
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M4 4h12v10a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M7 8h6M7 11h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    href: '/dashboard/profil',
+    label: 'Mon profil',
+    icon: (
+      <svg viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M4 17c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+]
+
+function getInitials(nom: string) {
+  return nom.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+}
+
+export default function DashboardSidebar({ user }: Props) {
+  const pathname = usePathname()
+
+  return (
+    <aside className="sidebar">
+      <Link href="/" className="brand">
+        <span className="brand-mark">L</span>
+        <span><b>Lili</b><em>-Ride</em></span>
+      </Link>
+
+      <nav className="sidenav">
+        <span className="group-label">Navigation</span>
+        {navItems.map(({ href, label, icon, exact }) => {
+          const isActive = exact ? pathname === href : pathname.startsWith(href)
+          return (
+            <Link key={href} href={href} className={isActive ? 'active' : ''}>
+              {icon}
+              {label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      <div className="sidebar-footer">
+        <div className="avatar avatar-sm" style={{ background: 'var(--primary)' }}>
+          {getInitials(user.nom)}
+        </div>
+        <div>
+          <div className="name">{user.nom}</div>
+          <div className="sub">{user.ville}</div>
+        </div>
+      </div>
+    </aside>
+  )
+}
