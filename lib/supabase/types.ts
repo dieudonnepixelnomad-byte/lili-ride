@@ -14,6 +14,7 @@ export interface Database {
           id: string
           nom: string
           telephone: string
+          email: string | null
           whatsapp: string | null
           ville: string
           photo_url: string | null
@@ -24,39 +25,21 @@ export interface Database {
           id?: string
           nom: string
           telephone: string
+          email?: string | null
           whatsapp?: string | null
           ville: string
           photo_url?: string | null
           role?: string
           created_at?: string
         }
-        Update: {
-          id?: string
-          nom?: string
-          telephone?: string
-          whatsapp?: string | null
-          ville?: string
-          photo_url?: string | null
-          role?: string
-          created_at?: string
-        }
+        Update: Partial<Database['public']['Tables']['users']['Insert']>
       }
       profils_transporteur: {
         Row: {
           id: string
           user_id: string
-          type_vehicule: string | null
-          marque: string | null
-          modele: string | null
-          plaque: string | null
-          nb_places: number | null
-          capacite_kg: number | null
-          volume_m3: number | null
-          types_colis_acceptes: string[] | null
           permis_url: string | null
-          carte_grise_url: string | null
-          photo_vehicule_url: string | null
-          statut_verification: string
+          statut_conducteur: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
           motif_rejet: string | null
           verifie_par: string | null
           verifie_le: string | null
@@ -65,18 +48,8 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          type_vehicule?: string | null
-          marque?: string | null
-          modele?: string | null
-          plaque?: string | null
-          nb_places?: number | null
-          capacite_kg?: number | null
-          volume_m3?: number | null
-          types_colis_acceptes?: string[] | null
           permis_url?: string | null
-          carte_grise_url?: string | null
-          photo_vehicule_url?: string | null
-          statut_verification?: string
+          statut_conducteur?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
           motif_rejet?: string | null
           verifie_par?: string | null
           verifie_le?: string | null
@@ -84,11 +57,55 @@ export interface Database {
         }
         Update: Partial<Database['public']['Tables']['profils_transporteur']['Insert']>
       }
+      vehicules_transporteur: {
+        Row: {
+          id: string
+          user_id: string
+          type_vehicule: 'Berline' | 'SUV' | 'Minibus' | 'Camionnette' | 'Moto' | null
+          marque: string | null
+          modele: string | null
+          plaque: string | null
+          nb_places: number | null
+          capacite_kg: number | null
+          volume_m3: number | null
+          types_colis_acceptes: string[] | null
+          equipements: string[] | null
+          carte_grise_url: string | null
+          photo_vehicule_url: string | null
+          statut_verification: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet: string | null
+          verifie_par: string | null
+          verifie_le: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type_vehicule?: 'Berline' | 'SUV' | 'Minibus' | 'Camionnette' | 'Moto' | null
+          marque?: string | null
+          modele?: string | null
+          plaque?: string | null
+          nb_places?: number | null
+          capacite_kg?: number | null
+          volume_m3?: number | null
+          types_colis_acceptes?: string[] | null
+          equipements?: string[] | null
+          carte_grise_url?: string | null
+          photo_vehicule_url?: string | null
+          statut_verification?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet?: string | null
+          verifie_par?: string | null
+          verifie_le?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['vehicules_transporteur']['Insert']>
+      }
       trajets: {
         Row: {
           id: string
           user_id: string
-          type: string
+          vehicule_transporteur_id: string | null
+          type: 'covoiturage' | 'colis'
           depart_label: string
           depart_lat: number | null
           depart_lng: number | null
@@ -101,13 +118,14 @@ export interface Database {
           places_dispo: number | null
           types_colis: string[] | null
           description: string | null
-          statut: string
+          statut: 'actif' | 'complet' | 'annulé'
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          type: string
+          vehicule_transporteur_id?: string | null
+          type: 'covoiturage' | 'colis'
           depart_label: string
           depart_lat?: number | null
           depart_lng?: number | null
@@ -120,7 +138,7 @@ export interface Database {
           places_dispo?: number | null
           types_colis?: string[] | null
           description?: string | null
-          statut?: string
+          statut?: 'actif' | 'complet' | 'annulé'
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['trajets']['Insert']>
@@ -134,8 +152,8 @@ export interface Database {
           annee: number | null
           couleur: string | null
           nb_places: number
-          carburant: string | null
-          boite: string | null
+          carburant: 'essence' | 'diesel' | 'hybride' | null
+          boite: 'manuelle' | 'automatique' | null
           lieu_label: string
           lieu_lat: number | null
           lieu_lng: number | null
@@ -143,7 +161,7 @@ export interface Database {
           photos_urls: string[]
           disponible: boolean
           description: string | null
-          statut: string
+          statut: 'actif' | 'suspendu'
           created_at: string
         }
         Insert: {
@@ -154,8 +172,8 @@ export interface Database {
           annee?: number | null
           couleur?: string | null
           nb_places: number
-          carburant?: string | null
-          boite?: string | null
+          carburant?: 'essence' | 'diesel' | 'hybride' | null
+          boite?: 'manuelle' | 'automatique' | null
           lieu_label: string
           lieu_lat?: number | null
           lieu_lng?: number | null
@@ -163,7 +181,7 @@ export interface Database {
           photos_urls?: string[]
           disponible?: boolean
           description?: string | null
-          statut?: string
+          statut?: 'actif' | 'suspendu'
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['vehicules']['Insert']>
@@ -172,7 +190,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string | null
-          type: string
+          type: 'covoiturage' | 'colis' | 'location'
           trajet_id: string | null
           vehicule_id: string | null
           nom_client: string
@@ -184,15 +202,15 @@ export interface Database {
           date_debut: string | null
           date_fin: string | null
           message: string | null
-          origine: string
-          statut: string
+          origine: 'formulaire' | 'telephone' | 'whatsapp'
+          statut: 'en_attente' | 'traitée' | 'annulée'
           notes_support: string | null
           created_at: string
         }
         Insert: {
           id?: string
           user_id?: string | null
-          type: string
+          type: 'covoiturage' | 'colis' | 'location'
           trajet_id?: string | null
           vehicule_id?: string | null
           nom_client: string
@@ -204,8 +222,8 @@ export interface Database {
           date_debut?: string | null
           date_fin?: string | null
           message?: string | null
-          origine?: string
-          statut?: string
+          origine?: 'formulaire' | 'telephone' | 'whatsapp'
+          statut?: 'en_attente' | 'traitée' | 'annulée'
           notes_support?: string | null
           created_at?: string
         }

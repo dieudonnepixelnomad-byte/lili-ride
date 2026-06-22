@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Avatar from '@/components/shared/Avatar'
 import DemandeForm from '@/components/shared/DemandeForm'
+import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
 import type { Trajet } from '@/types'
 
 interface Props {
@@ -19,7 +20,7 @@ export default async function ColisDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url), profils_transporteur:users(profils_transporteur(*))')
+    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .eq('type', 'colis')
     .single()
@@ -72,6 +73,19 @@ export default async function ColisDetailPage({ params }: Props) {
                 </div>
               </div>
             )}
+
+            {/* Carte du trajet */}
+            <div style={{ marginTop: 32 }}>
+              <TrajetMapWrapper
+                departLabel={t.depart_label}
+                departLat={t.depart_lat ?? null}
+                departLng={t.depart_lng ?? null}
+                arriveeLabel={t.arrivee_label}
+                arriveeLat={t.arrivee_lat ?? null}
+                arriveeLng={t.arrivee_lng ?? null}
+                height={260}
+              />
+            </div>
 
             {t.description && (
               <div style={{ marginTop: 32 }}>

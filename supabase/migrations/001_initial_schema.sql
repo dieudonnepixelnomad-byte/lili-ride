@@ -15,6 +15,7 @@ create table if not exists public.users (
   id            uuid primary key references auth.users(id) on delete cascade,
   nom           text not null,
   telephone     text unique not null,
+  email         text,
   whatsapp      text,
   ville         text not null,
   photo_url     text,
@@ -22,8 +23,23 @@ create table if not exists public.users (
   created_at    timestamptz not null default now()
 );
 
--- profils_transporteur
+-- profils_transporteur (conductor-level only — permis + statut conducteur)
+-- Vehicle data moved to vehicules_transporteur (1-to-N)
 create table if not exists public.profils_transporteur (
+  id                uuid primary key default uuid_generate_v4(),
+  user_id           uuid not null references public.users(id) on delete cascade,
+  permis_url        text,
+  statut_conducteur text not null default 'non_soumis'
+                    check (statut_conducteur in ('non_soumis', 'en_attente', 'vérifié', 'rejeté')),
+  motif_rejet       text,
+  verifie_par       uuid references public.users(id) on delete set null,
+  verifie_le        timestamptz,
+  created_at        timestamptz not null default now(),
+  unique (user_id)
+);
+
+-- vehicules_transporteur (N per user — each vehicle verified independently)
+create table if not exists public.vehicules_transporteur (
   id                    uuid primary key default uuid_generate_v4(),
   user_id               uuid not null references public.users(id) on delete cascade,
   type_vehicule         text check (type_vehicule in ('Berline', 'SUV', 'Minibus', 'Camionnette', 'Moto')),
@@ -34,7 +50,7 @@ create table if not exists public.profils_transporteur (
   capacite_kg           numeric,
   volume_m3             numeric,
   types_colis_acceptes  text[],
-  permis_url            text,
+  equipements           text[],
   carte_grise_url       text,
   photo_vehicule_url    text,
   statut_verification   text not null default 'non_soumis'
@@ -42,32 +58,32 @@ create table if not exists public.profils_transporteur (
   motif_rejet           text,
   verifie_par           uuid references public.users(id) on delete set null,
   verifie_le            timestamptz,
-  created_at            timestamptz not null default now(),
-  unique (user_id)
+  created_at            timestamptz not null default now()
 );
 
--- trajets
+-- trajets (covoiturage + colis — vehicule_transporteur_id links chosen vehicle)
 create table if not exists public.trajets (
-  id             uuid primary key default uuid_generate_v4(),
-  user_id        uuid not null references public.users(id) on delete cascade,
-  type           text not null check (type in ('covoiturage', 'colis')),
-  depart_label   text not null,
-  depart_lat     float,
-  depart_lng     float,
-  arrivee_label  text not null,
-  arrivee_lat    float,
-  arrivee_lng    float,
-  date_depart    date not null,
-  heure_depart   time not null,
-  prix           numeric not null,
-  places_dispo   int,
-  types_colis    text[],
-  description    text,
-  statut         text not null default 'actif' check (statut in ('actif', 'complet', 'annulé')),
-  created_at     timestamptz not null default now()
+  id                        uuid primary key default uuid_generate_v4(),
+  user_id                   uuid not null references public.users(id) on delete cascade,
+  vehicule_transporteur_id  uuid references public.vehicules_transporteur(id) on delete set null,
+  type                      text not null check (type in ('covoiturage', 'colis')),
+  depart_label              text not null,
+  depart_lat                float,
+  depart_lng                float,
+  arrivee_label             text not null,
+  arrivee_lat               float,
+  arrivee_lng               float,
+  date_depart               date not null,
+  heure_depart              time not null,
+  prix                      numeric not null,
+  places_dispo              int,
+  types_colis               text[],
+  description               text,
+  statut                    text not null default 'actif' check (statut in ('actif', 'complet', 'annulé')),
+  created_at                timestamptz not null default now()
 );
 
--- vehicules
+-- vehicules (location de véhicule — table indépendante, inchangée)
 create table if not exists public.vehicules (
   id           uuid primary key default uuid_generate_v4(),
   user_id      uuid not null references public.users(id) on delete cascade,
@@ -83,6 +99,7 @@ create table if not exists public.vehicules (
   lieu_lng     float,
   prix_jour    numeric not null,
   photos_urls  text[],
+  equipements  text[],
   disponible   boolean not null default true,
   description  text,
   statut       text not null default 'actif' check (statut in ('actif', 'suspendu')),
@@ -115,21 +132,24 @@ create table if not exists public.demandes (
 -- INDEXES
 -- ============================================================
 
-create index if not exists trajets_type_statut_idx on public.trajets(type, statut);
-create index if not exists trajets_date_depart_idx on public.trajets(date_depart);
-create index if not exists vehicules_statut_idx on public.vehicules(statut);
-create index if not exists demandes_statut_idx on public.demandes(statut);
-create index if not exists demandes_created_at_idx on public.demandes(created_at desc);
+create index if not exists trajets_type_statut_idx           on public.trajets(type, statut);
+create index if not exists trajets_date_depart_idx           on public.trajets(date_depart);
+create index if not exists vehicules_transporteur_user_idx   on public.vehicules_transporteur(user_id);
+create index if not exists vehicules_transporteur_statut_idx on public.vehicules_transporteur(statut_verification);
+create index if not exists vehicules_statut_idx              on public.vehicules(statut);
+create index if not exists demandes_statut_idx               on public.demandes(statut);
+create index if not exists demandes_created_at_idx           on public.demandes(created_at desc);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 
-alter table public.users enable row level security;
-alter table public.profils_transporteur enable row level security;
-alter table public.trajets enable row level security;
-alter table public.vehicules enable row level security;
-alter table public.demandes enable row level security;
+alter table public.users                  enable row level security;
+alter table public.profils_transporteur   enable row level security;
+alter table public.vehicules_transporteur enable row level security;
+alter table public.trajets                enable row level security;
+alter table public.vehicules              enable row level security;
+alter table public.demandes               enable row level security;
 
 -- Helper: is current user admin?
 create or replace function public.is_admin()
@@ -140,6 +160,10 @@ returns boolean language sql security definer stable as $$
 $$;
 
 -- ---- users policies ----
+drop policy if exists "users: own row read"  on public.users;
+drop policy if exists "users: own row update" on public.users;
+drop policy if exists "users: insert own row" on public.users;
+
 create policy "users: own row read" on public.users
   for select using (auth.uid() = id or public.is_admin());
 
@@ -150,13 +174,49 @@ create policy "users: insert own row" on public.users
   for insert with check (auth.uid() = id);
 
 -- ---- profils_transporteur policies ----
-create policy "profils: own row" on public.profils_transporteur
-  for all using (auth.uid() = user_id or public.is_admin());
+drop policy if exists "profils: own row read"  on public.profils_transporteur;
+drop policy if exists "profils: insert own"    on public.profils_transporteur;
+drop policy if exists "profils: owner update"  on public.profils_transporteur;
+drop policy if exists "profils: admin delete"  on public.profils_transporteur;
+-- legacy name from previous schema version
+drop policy if exists "profils: own row"       on public.profils_transporteur;
+
+create policy "profils: own row read" on public.profils_transporteur
+  for select using (auth.uid() = user_id or public.is_admin());
 
 create policy "profils: insert own" on public.profils_transporteur
   for insert with check (auth.uid() = user_id);
 
+create policy "profils: owner update" on public.profils_transporteur
+  for update using (auth.uid() = user_id or public.is_admin());
+
+create policy "profils: admin delete" on public.profils_transporteur
+  for delete using (public.is_admin());
+
+-- ---- vehicules_transporteur policies ----
+drop policy if exists "vt: own rows read" on public.vehicules_transporteur;
+drop policy if exists "vt: insert own"    on public.vehicules_transporteur;
+drop policy if exists "vt: owner update"  on public.vehicules_transporteur;
+drop policy if exists "vt: owner delete"  on public.vehicules_transporteur;
+
+create policy "vt: own rows read" on public.vehicules_transporteur
+  for select using (auth.uid() = user_id or public.is_admin());
+
+create policy "vt: insert own" on public.vehicules_transporteur
+  for insert with check (auth.uid() = user_id);
+
+create policy "vt: owner update" on public.vehicules_transporteur
+  for update using (auth.uid() = user_id or public.is_admin());
+
+create policy "vt: owner delete" on public.vehicules_transporteur
+  for delete using (auth.uid() = user_id or public.is_admin());
+
 -- ---- trajets policies ----
+drop policy if exists "trajets: public read actif" on public.trajets;
+drop policy if exists "trajets: owner write"       on public.trajets;
+drop policy if exists "trajets: owner update"      on public.trajets;
+drop policy if exists "trajets: owner delete"      on public.trajets;
+
 create policy "trajets: public read actif" on public.trajets
   for select using (statut = 'actif' or auth.uid() = user_id or public.is_admin());
 
@@ -170,6 +230,11 @@ create policy "trajets: owner delete" on public.trajets
   for delete using (auth.uid() = user_id or public.is_admin());
 
 -- ---- vehicules policies ----
+drop policy if exists "vehicules: public read actif" on public.vehicules;
+drop policy if exists "vehicules: owner write"       on public.vehicules;
+drop policy if exists "vehicules: owner update"      on public.vehicules;
+drop policy if exists "vehicules: owner delete"      on public.vehicules;
+
 create policy "vehicules: public read actif" on public.vehicules
   for select using (statut = 'actif' or auth.uid() = user_id or public.is_admin());
 
@@ -183,6 +248,10 @@ create policy "vehicules: owner delete" on public.vehicules
   for delete using (auth.uid() = user_id or public.is_admin());
 
 -- ---- demandes policies ----
+drop policy if exists "demandes: own read"           on public.demandes;
+drop policy if exists "demandes: insert anon or auth" on public.demandes;
+drop policy if exists "demandes: admin update"       on public.demandes;
+
 create policy "demandes: own read" on public.demandes
   for select using (auth.uid() = user_id or public.is_admin());
 
@@ -207,7 +276,7 @@ values (
 )
 on conflict (id) do nothing;
 
--- Photos bucket (public) — vehicle photos
+-- Photos bucket (public) — vehicle photos, profile photos
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'photos',
@@ -219,6 +288,10 @@ values (
 on conflict (id) do nothing;
 
 -- Storage RLS: documents (private — owner + admin only)
+drop policy if exists "documents: owner upload" on storage.objects;
+drop policy if exists "documents: owner read"   on storage.objects;
+drop policy if exists "documents: owner delete" on storage.objects;
+
 create policy "documents: owner upload" on storage.objects
   for insert with check (
     bucket_id = 'documents' and auth.uid() is not null
@@ -241,6 +314,10 @@ create policy "documents: owner delete" on storage.objects
   );
 
 -- Storage RLS: photos (public read, auth write)
+drop policy if exists "photos: public read"  on storage.objects;
+drop policy if exists "photos: auth upload"  on storage.objects;
+drop policy if exists "photos: owner delete" on storage.objects;
+
 create policy "photos: public read" on storage.objects
   for select using (bucket_id = 'photos');
 

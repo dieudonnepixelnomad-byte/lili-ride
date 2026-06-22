@@ -124,6 +124,24 @@ created_at    timestamp
 ```
 
 ### `profils_transporteur`
+> Un seul par compte (1-to-1). Contient uniquement les données conducteur (permis).
+> Les données véhicule sont dans `vehicules_transporteur`.
+
+```sql
+id                uuid PK
+user_id           uuid FK → users (CASCADE DELETE, UNIQUE)
+permis_url        text   -- bucket privé Supabase Storage
+statut_conducteur text DEFAULT 'non_soumis'
+                  -- non_soumis | en_attente | vérifié | rejeté
+motif_rejet       text
+verifie_par       uuid FK → users
+verifie_le        timestamp
+created_at        timestamp
+```
+
+### `vehicules_transporteur`
+> N par compte (1-to-N). Chaque véhicule vérifié indépendamment.
+
 ```sql
 id                    uuid PK
 user_id               uuid FK → users (CASCADE DELETE)
@@ -131,11 +149,10 @@ type_vehicule         text   -- Berline | SUV | Minibus | Camionnette | Moto
 marque                text
 modele                text
 plaque                text
-nb_places             int
-capacite_kg           numeric
-volume_m3             numeric
-types_colis_acceptes  text[] -- documents | petit | volumineux | fragile
-permis_url            text   -- bucket privé Supabase Storage
+nb_places             int              -- covoiturage
+capacite_kg           numeric          -- colis
+volume_m3             numeric          -- colis
+types_colis_acceptes  text[]           -- documents | petit | volumineux | fragile
 carte_grise_url       text   -- bucket privé Supabase Storage
 photo_vehicule_url    text
 statut_verification   text DEFAULT 'non_soumis'
@@ -147,29 +164,33 @@ created_at            timestamp
 ```
 
 ### `trajets`
-> Une seule table pour covoiturage et colis — distingués par la colonne `type`.
+> Une seule table pour covoiturage et colis — distingués par la colonne `type`.  
+> `vehicule_transporteur_id` : le transporteur choisit quel véhicule il utilise à la publication.
 
 ```sql
-id             uuid PK
-user_id        uuid FK → users
-type           text NOT NULL   -- 'covoiturage' | 'colis'
-depart_label   text NOT NULL
-depart_lat     float
-depart_lng     float
-arrivee_label  text NOT NULL
-arrivee_lat    float
-arrivee_lng    float
-date_depart    date NOT NULL
-heure_depart   time NOT NULL
-prix           numeric NOT NULL
-places_dispo   int             -- covoiturage uniquement
-types_colis    text[]          -- colis uniquement
-description    text
-statut         text DEFAULT 'actif'  -- actif | complet | annulé
-created_at     timestamp
+id                        uuid PK
+user_id                   uuid FK → users
+vehicule_transporteur_id  uuid FK → vehicules_transporteur (nullable, SET NULL)
+type                      text NOT NULL   -- 'covoiturage' | 'colis'
+depart_label              text NOT NULL
+depart_lat                float
+depart_lng                float
+arrivee_label             text NOT NULL
+arrivee_lat               float
+arrivee_lng               float
+date_depart               date NOT NULL
+heure_depart              time NOT NULL
+prix                      numeric NOT NULL
+places_dispo              int             -- covoiturage uniquement
+types_colis               text[]          -- colis uniquement
+description               text
+statut                    text DEFAULT 'actif'  -- actif | complet | annulé
+created_at                timestamp
 ```
 
 ### `vehicules`
+> Table dédiée à la location de véhicule. Indépendante de `vehicules_transporteur`.
+
 ```sql
 id           uuid PK
 user_id      uuid FK → users
@@ -219,16 +240,27 @@ created_at          timestamp
 
 Un seul type de compte. Le même utilisateur peut être passager, chauffeur, expéditeur ou propriétaire selon le contexte.
 
-**Statuts du profil transporteur :**
+**Deux niveaux de vérification indépendants :**
+
+| Entité | Champ | Statuts |
+|--------|-------|---------|
+| `profils_transporteur` | `statut_conducteur` | non_soumis → en_attente → vérifié / rejeté |
+| `vehicules_transporteur` | `statut_verification` | non_soumis → en_attente → vérifié / rejeté |
+
+**Statuts conducteur (`statut_conducteur`) :**
 
 | Statut | Ce que peut faire l'utilisateur |
 |--------|--------------------------------|
 | `non_soumis` | Chercher uniquement |
 | `en_attente` | Chercher uniquement — en attente de validation admin |
-| `vérifié` | Peut publier des annonces |
+| `vérifié` | Permis validé — peut publier si véhicule aussi vérifié |
 | `rejeté` | Chercher uniquement — doit corriger et resoumettre |
 
-**La publication d'un trajet ou véhicule est bloquée tant que le statut n'est pas `vérifié`.**
+**Règle de publication d'un trajet :**
+- `profils_transporteur.statut_conducteur = 'vérifié'`
+- **ET** le véhicule sélectionné : `vehicules_transporteur.statut_verification = 'vérifié'`
+
+Les deux conditions doivent être vraies. Un véhicule non vérifié bloque même si le permis est ok.
 
 ---
 

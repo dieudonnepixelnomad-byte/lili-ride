@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
 import Avatar from '@/components/shared/Avatar'
+import VerificationActions from '@/components/shared/VerificationActions'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -12,19 +13,33 @@ function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function AdminVerificationDetailPage({ params }: Props) {
+export default async function AdminVerificationPermisPage({ params }: Props) {
   const { id } = await params
   const supabase = await createClient()
 
   const { data: profil } = await supabase
     .from('profils_transporteur')
-    .select('*, users(nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, users!profils_transporteur_user_id_fkey(nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .single()
 
   if (!profil) notFound()
 
-  const u = (profil as Record<string, unknown>).users as { nom: string; telephone: string; whatsapp?: string; ville: string; photo_url?: string } | null
+  const u = (profil as Record<string, unknown>).users as {
+    nom: string
+    telephone: string
+    whatsapp?: string
+    ville: string
+    photo_url?: string
+  } | null
+
+  let permisUrl: string | null = null
+  if (profil.permis_url) {
+    const { data, error } = await supabase.storage.from('documents').createSignedUrl(profil.permis_url, 3600)
+    if (error) console.error('[admin/verifications/id] createSignedUrl error:', error)
+    else permisUrl = data.signedUrl
+  }
+  const permisIsPdf = profil.permis_url?.toLowerCase().endsWith('.pdf') ?? false
 
   return (
     <>
@@ -32,17 +47,16 @@ export default async function AdminVerificationDetailPage({ params }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Link href="/admin/verifications" className="btn btn-ghost btn-sm">← Retour</Link>
           <div>
-            <h1 className="page-title">Vérification — {u?.nom ?? '—'}</h1>
+            <h1 className="page-title">Permis — {u?.nom ?? '—'}</h1>
             <p className="page-sub">Soumis le {formatDate(profil.created_at)}</p>
           </div>
         </div>
-        <StatusBadge statut={profil.statut_verification} />
+        <StatusBadge statut={profil.statut_conducteur} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        {/* Transporteur info */}
         <div className="card">
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', fontWeight: 600, fontSize: 14 }}>Transporteur</div>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', fontWeight: 600, fontSize: 14 }}>Conducteur</div>
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {u && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
@@ -54,71 +68,60 @@ export default async function AdminVerificationDetailPage({ params }: Props) {
               </div>
             )}
             <Row label="Téléphone" value={<a href={`tel:${u?.telephone}`} style={{ color: 'var(--primary)' }}>{u?.telephone}</a>} />
-            {u?.whatsapp && <Row label="WhatsApp" value={<a href={`https://wa.me/${u.whatsapp.replace(/\D/g, '')}`} style={{ color: 'var(--accent)' }} target="_blank" rel="noopener noreferrer">{u.whatsapp}</a>} />}
-          </div>
-        </div>
-
-        {/* Véhicule info */}
-        <div className="card">
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', fontWeight: 600, fontSize: 14 }}>Véhicule</div>
-          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Row label="Type" value={profil.type_vehicule ?? '—'} />
-            <Row label="Marque/Modèle" value={profil.marque && profil.modele ? `${profil.marque} ${profil.modele}` : '—'} />
-            <Row label="Plaque" value={profil.plaque ?? '—'} />
-            {profil.nb_places && <Row label="Nb places" value={String(profil.nb_places)} />}
-            {profil.capacite_kg && <Row label="Capacité" value={`${profil.capacite_kg} kg`} />}
-            {profil.types_colis_acceptes?.length > 0 && (
-              <Row label="Colis acceptés" value={(profil.types_colis_acceptes as string[]).join(', ')} />
+            {u?.whatsapp && (
+              <Row label="WhatsApp" value={
+                <a href={`https://wa.me/${u.whatsapp.replace(/\D/g, '')}`} style={{ color: 'var(--accent)' }} target="_blank" rel="noopener noreferrer">
+                  {u.whatsapp}
+                </a>
+              } />
             )}
           </div>
         </div>
-      </div>
 
-      {/* Documents */}
-      <div className="card" style={{ marginTop: 24 }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', fontWeight: 600, fontSize: 14 }}>Documents</div>
-        <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-          {[
-            { label: 'Permis de conduire', url: profil.permis_url },
-            { label: 'Carte grise', url: profil.carte_grise_url },
-            { label: 'Photo du véhicule', url: profil.photo_vehicule_url },
-          ].map(({ label, url }) => (
-            <div key={label} style={{ border: '1px solid var(--line)', borderRadius: 12, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)', fontSize: 13, fontWeight: 500 }}>{label}</div>
-              <div style={{ padding: 14 }}>
-                {url ? (
-                  <a href={url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                    Voir le document →
+        <div className="card">
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--line)', fontWeight: 600, fontSize: 14 }}>Permis de conduire</div>
+          <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Row label="Statut" value={<StatusBadge statut={profil.statut_conducteur} />} />
+            {profil.motif_rejet && <Row label="Motif rejet" value={profil.motif_rejet} />}
+            <div style={{ marginTop: 8 }}>
+              {permisUrl ? (
+                <>
+                  {permisIsPdf ? (
+                    <iframe
+                      src={permisUrl}
+                      style={{ width: '100%', height: 480, border: '1px solid var(--line)', borderRadius: 6 }}
+                      title="Permis de conduire"
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={permisUrl}
+                      alt="Permis de conduire"
+                      style={{ width: '100%', maxHeight: 480, objectFit: 'contain', border: '1px solid var(--line)', borderRadius: 6, background: '#f5f5f5' }}
+                    />
+                  )}
+                  <a href={permisUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm" style={{ marginTop: 10, display: 'inline-block' }}>
+                    Ouvrir en plein écran →
                   </a>
-                ) : (
-                  <span style={{ fontSize: 13, color: 'var(--ink-3)' }}>Non fourni</span>
-                )}
-              </div>
+                </>
+              ) : (
+                <span style={{ fontSize: 13, color: 'var(--danger)' }}>
+                  {profil.permis_url ? 'Erreur de chargement du document' : 'Permis non fourni'}
+                </span>
+              )}
             </div>
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Motif rejet */}
-      {profil.statut_verification === 'rejeté' && profil.motif_rejet && (
+      {profil.statut_conducteur === 'rejeté' && profil.motif_rejet && (
         <div className="notice warn" style={{ marginTop: 24 }}>
-          <div>
-            <strong>Motif de rejet :</strong> {profil.motif_rejet}
-          </div>
+          <div><strong>Motif de rejet :</strong> {profil.motif_rejet}</div>
         </div>
       )}
 
-      {/* Actions */}
-      {profil.statut_verification === 'en_attente' && (
-        <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
-          <form action={`/api/admin/verifications/${id}/approuver`} method="POST" style={{ display: 'contents' }}>
-            <button type="submit" className="btn btn-primary">Approuver le profil</button>
-          </form>
-          <form action={`/api/admin/verifications/${id}/rejeter`} method="POST" style={{ display: 'contents' }}>
-            <input type="text" name="motif" placeholder="Motif du rejet (obligatoire)" className="input" style={{ width: 280 }} required />
-            <button type="submit" className="btn btn-outline" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }}>Rejeter</button>
-          </form>
-        </div>
+      {profil.statut_conducteur === 'en_attente' && (
+        <VerificationActions id={id} type="conducteur" />
       )}
     </>
   )

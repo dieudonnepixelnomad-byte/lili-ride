@@ -20,13 +20,13 @@ export default function Footer() {
             <Link href="/covoiturage">Covoiturage</Link>
             <Link href="/colis">Transport de colis</Link>
             <Link href="/location">Location de véhicules</Link>
-            <Link href="/inscription">Devenir transporteur</Link>
+            <Link href="/connexion">Devenir transporteur</Link>
           </div>
 
           <div className="footer-col">
             <h5>Compte</h5>
             <Link href="/connexion">Connexion</Link>
-            <Link href="/inscription">Inscription</Link>
+            <Link href="/connexion">Connexion / Inscription</Link>
             <Link href="/dashboard">Tableau de bord</Link>
             <Link href="/dashboard/publier">Publier une annonce</Link>
           </div>

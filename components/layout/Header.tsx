@@ -45,7 +45,7 @@ export default function Header({ session }: { session?: boolean }) {
           ) : (
             <>
               <Link href="/connexion" className="btn btn-ghost">Connexion</Link>
-              <Link href="/inscription" className="btn btn-primary">Créer un compte</Link>
+              <Link href="/connexion" className="btn btn-primary">Créer un compte</Link>
             </>
           )}
         </div>

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
-  const { nom, telephone, whatsapp, ville } = await request.json()
+  const { nom, telephone, email, whatsapp, ville } = await request.json()
 
   if (!nom || !telephone || !ville) {
     return NextResponse.json({ error: 'Champs obligatoires manquants.' }, { status: 400 })
@@ -32,11 +32,12 @@ export async function POST(request: NextRequest) {
     telephone,
     whatsapp: whatsapp || null,
     ville,
-    email: user.email ?? null,
+    email: email || user.email || null,
   })
 
   if (error) {
-    return NextResponse.json({ error: 'Erreur lors de la création du profil.' }, { status: 500 })
+    console.error('[profil] upsert error:', JSON.stringify(error))
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

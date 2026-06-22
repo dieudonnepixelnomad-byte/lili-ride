@@ -1,22 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import AddressAutocomplete from '@/components/shared/AddressAutocomplete'
+import type { AddressSelection } from '@/components/shared/AddressAutocomplete'
+import type { VehiculeTransporteur } from '@/types'
+
+interface AddressState {
+  label: string
+  lat?: number
+  lng?: number
+}
 
 type ServiceType = 'covoiturage' | 'colis' | 'location'
+type VerifStatus =
+  | 'idle'
+  | 'checking'
+  | 'ok'
+  | 'conducteur_non_soumis'
+  | 'conducteur_en_attente'
+  | 'conducteur_rejeté'
+  | 'vehicule_manquant'
 
 const TYPES_COLIS = ['documents', 'petit', 'volumineux', 'fragile']
-const VILLES = ['Douala', 'Yaoundé', 'Bafoussam', 'Autre']
+const EQUIPEMENTS_VEHICULE = [
+  'Climatisation',
+  'GPS / Navigation',
+  'Bluetooth / Audio',
+  'Airbag',
+  'ABS',
+  'Caméra de recul',
+  'Vitres électriques',
+  'Toit ouvrant',
+  'Galerie de toit',
+  '4x4 / 4 roues motrices',
+  'Porte-bagages',
+  'Chargeur USB',
+]
 
 export default function PublierPage() {
   const router = useRouter()
+  const supabase = createClient()
   const [serviceType, setServiceType] = useState<ServiceType | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [verifStatus, setVerifStatus] = useState<VerifStatus>('idle')
+  const [motifRejetConducteur, setMotifRejetConducteur] = useState('')
+  const [verifiedVehicules, setVerifiedVehicules] = useState<VehiculeTransporteur[]>([])
+  const [selectedVehiculeId, setSelectedVehiculeId] = useState('')
+
   // Shared fields
-  const [depart, setDepart] = useState('')
-  const [arrivee, setArrivee] = useState('')
+  const [depart, setDepart] = useState<AddressState>({ label: '' })
+  const [arrivee, setArrivee] = useState<AddressState>({ label: '' })
   const [dateDepart, setDateDepart] = useState('')
   const [heureDepart, setHeureDepart] = useState('')
   const [prix, setPrix] = useState('')
@@ -36,22 +73,166 @@ export default function PublierPage() {
   const [nbPlaces, setNbPlaces] = useState('5')
   const [carburant, setCarburant] = useState('')
   const [boite, setBoite] = useState('')
-  const [lieuLabel, setLieuLabel] = useState('')
+  const [lieu, setLieu] = useState<AddressState>({ label: '' })
+  const [photos, setPhotos] = useState<File[]>([])
+  const [equipements, setEquipements] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleSelectService(type: ServiceType) {
+    setServiceType(type)
+
+    if (type === 'location') {
+      // Location only needs conducteur verified
+      setVerifStatus('checking')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setVerifStatus('conducteur_non_soumis'); return }
+
+      const { data: profil } = await supabase
+        .from('profils_transporteur')
+        .select('statut_conducteur, motif_rejet')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!profil || profil.statut_conducteur === 'non_soumis') {
+        setVerifStatus('conducteur_non_soumis')
+      } else if (profil.statut_conducteur === 'en_attente') {
+        setVerifStatus('conducteur_en_attente')
+      } else if (profil.statut_conducteur === 'rejeté') {
+        setMotifRejetConducteur(profil.motif_rejet ?? '')
+        setVerifStatus('conducteur_rejeté')
+      } else {
+        setVerifStatus('ok')
+      }
+      return
+    }
+
+    // Covoiturage / colis: need conducteur + at least one verified vehicle
+    setVerifStatus('checking')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setVerifStatus('conducteur_non_soumis'); return }
+
+    const [{ data: profil }, { data: vehicules }] = await Promise.all([
+      supabase
+        .from('profils_transporteur')
+        .select('statut_conducteur, motif_rejet')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('vehicules_transporteur')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('statut_verification', 'vérifié'),
+    ])
+
+    if (!profil || profil.statut_conducteur === 'non_soumis') {
+      setVerifStatus('conducteur_non_soumis')
+    } else if (profil.statut_conducteur === 'en_attente') {
+      setVerifStatus('conducteur_en_attente')
+    } else if (profil.statut_conducteur === 'rejeté') {
+      setMotifRejetConducteur(profil.motif_rejet ?? '')
+      setVerifStatus('conducteur_rejeté')
+    } else if (!vehicules || vehicules.length === 0) {
+      setVerifStatus('vehicule_manquant')
+    } else {
+      setVerifiedVehicules(vehicules as VehiculeTransporteur[])
+      setSelectedVehiculeId(vehicules[0].id)
+      setVerifStatus('ok')
+    }
+  }
 
   function toggleColis(t: string) {
     setTypesColis(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
   }
 
+  function toggleEquipement(t: string) {
+    setEquipements(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+  }
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    setPhotos(prev => [...prev, ...files].slice(0, 5))
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function removePhoto(index: number) {
+    setPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  async function uploadPhotos(): Promise<string[]> {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Non authentifié')
+
+    const urls: string[] = []
+    for (const file of photos) {
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('vehicules').upload(path, file)
+      if (uploadErr) throw new Error(`Upload échoué : ${uploadErr.message}`)
+      const { data: { publicUrl } } = supabase.storage.from('vehicules').getPublicUrl(path)
+      urls.push(publicUrl)
+    }
+    return urls
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (serviceType === 'location' && photos.length === 0) {
+      setError('Ajoutez au moins une photo du véhicule.')
+      return
+    }
+
+    if ((serviceType === 'covoiturage' || serviceType === 'colis') && !selectedVehiculeId) {
+      setError('Sélectionnez un véhicule.')
+      return
+    }
+
+    if ((serviceType === 'covoiturage' || serviceType === 'colis') && (!depart.lat || !arrivee.lat)) {
+      setError('Sélectionnez le départ et l\'arrivée depuis les suggestions de la liste.')
+      return
+    }
+
+    if (serviceType === 'location' && !lieu.lat) {
+      setError('Sélectionnez le lieu depuis les suggestions de la liste.')
+      return
+    }
+
     setLoading(true)
     try {
-      const endpoint = serviceType === 'location' ? '/api/vehicules' : '/api/trajets'
-      const body = serviceType === 'location'
-        ? { marque, modele, annee: annee ? parseInt(annee) : undefined, couleur, nb_places: parseInt(nbPlaces), carburant, boite, lieu_label: lieuLabel, prix_jour: parseFloat(prix), description }
-        : { type: serviceType, depart_label: depart, arrivee_label: arrivee, date_depart: dateDepart, heure_depart: heureDepart, prix: parseFloat(prix), places_dispo: serviceType === 'covoiturage' ? parseInt(placesDispo) : undefined, types_colis: serviceType === 'colis' ? typesColis : undefined, description }
+      let body: Record<string, unknown>
 
+      if (serviceType === 'location') {
+        const photosUrls = await uploadPhotos()
+        body = {
+          marque, modele,
+          annee: annee ? parseInt(annee) : undefined,
+          couleur, nb_places: parseInt(nbPlaces), carburant, boite,
+          lieu_label: lieu.label,
+          lieu_lat: lieu.lat,
+          lieu_lng: lieu.lng,
+          prix_jour: parseFloat(prix),
+          photos_urls: photosUrls, equipements, description,
+        }
+      } else {
+        body = {
+          vehicule_transporteur_id: selectedVehiculeId,
+          type: serviceType,
+          depart_label: depart.label,
+          depart_lat: depart.lat,
+          depart_lng: depart.lng,
+          arrivee_label: arrivee.label,
+          arrivee_lat: arrivee.lat,
+          arrivee_lng: arrivee.lng,
+          date_depart: dateDepart, heure_depart: heureDepart,
+          prix: parseFloat(prix),
+          places_dispo: serviceType === 'covoiturage' ? parseInt(placesDispo) : undefined,
+          types_colis: serviceType === 'colis' ? typesColis : undefined,
+          description,
+        }
+      }
+
+      const endpoint = serviceType === 'location' ? '/api/vehicules' : '/api/trajets'
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,13 +244,14 @@ export default function PublierPage() {
       } else {
         router.push('/dashboard/mes-annonces')
       }
-    } catch {
-      setError('Erreur réseau. Réessayez.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erreur réseau. Réessayez.')
     } finally {
       setLoading(false)
     }
   }
 
+  // ── Choix du service ──
   if (!serviceType) {
     return (
       <>
@@ -86,14 +268,9 @@ export default function PublierPage() {
             { id: 'colis' as ServiceType, title: 'Transport de colis', desc: 'Acceptez de transporter des colis sur vos trajets réguliers.' },
             { id: 'location' as ServiceType, title: 'Location de véhicule', desc: 'Mettez votre véhicule à disposition pour des locations à la journée.' },
           ]).map(({ id, title, desc }) => (
-            <button key={id} type="button" onClick={() => setServiceType(id)} style={{
-              padding: 28,
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 18,
-              textAlign: 'left',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
+            <button key={id} type="button" onClick={() => handleSelectService(id)} style={{
+              padding: 28, background: 'var(--surface)', border: '1px solid var(--line)',
+              borderRadius: 18, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
               transition: 'border-color .15s, box-shadow .15s',
             }}
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = 'var(--shadow-md)' }}
@@ -103,6 +280,87 @@ export default function PublierPage() {
               <p style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.5 }}>{desc}</p>
             </button>
           ))}
+        </div>
+      </>
+    )
+  }
+
+  // ── Gate de vérification ──
+  if (verifStatus === 'checking') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 320, gap: 16 }}>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--line)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ color: 'var(--ink-2)', fontSize: 15 }}>Vérification de votre profil…</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  if (verifStatus !== 'ok' && verifStatus !== 'idle') {
+    const configs: Record<Exclude<VerifStatus, 'idle' | 'checking' | 'ok'>, {
+      icon: string; title: string; text: string; cta: { label: string; href: string } | null
+    }> = {
+      conducteur_non_soumis: {
+        icon: '📋',
+        title: 'Complétez votre profil conducteur',
+        text: 'Fournissez votre permis de conduire et soumettez-le pour validation. Dossier examiné sous 24h.',
+        cta: { label: 'Compléter mon profil', href: '/dashboard/profil' },
+      },
+      conducteur_en_attente: {
+        icon: '⏳',
+        title: 'Permis en cours d\'examen',
+        text: 'Notre équipe vérifie votre permis de conduire. Vous pourrez publier dès validation — généralement sous 24h.',
+        cta: null,
+      },
+      conducteur_rejeté: {
+        icon: '⚠️',
+        title: 'Permis rejeté',
+        text: motifRejetConducteur || 'Des informations sont incorrectes dans votre dossier. Corrigez-les pour relancer la vérification.',
+        cta: { label: 'Corriger mon dossier', href: '/dashboard/profil' },
+      },
+      vehicule_manquant: {
+        icon: '🚗',
+        title: 'Aucun véhicule vérifié',
+        text: 'Votre permis est validé. Ajoutez un véhicule et soumettez-le pour vérification afin de publier des trajets.',
+        cta: { label: 'Gérer mes véhicules', href: '/dashboard/profil' },
+      },
+    }
+
+    const cfg = configs[verifStatus as keyof typeof configs]
+    const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis', location: 'Location de véhicule' }[serviceType]
+
+    return (
+      <>
+        <div className="page-head">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button type="button" onClick={() => { setServiceType(null); setVerifStatus('idle') }} className="btn btn-ghost btn-sm" style={{ padding: '0 12px' }}>← Retour</button>
+            <h1 className="page-title">{typeLabel}</h1>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 520 }}>
+          <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 20, padding: '48px 40px' }}>
+            <div style={{ fontSize: 56, lineHeight: 1 }}>{cfg.icon}</div>
+            <div>
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, color: 'var(--ink)', marginBottom: 12 }}>{cfg.title}</h2>
+              <p style={{ fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.7, maxWidth: 400 }}>{cfg.text}</p>
+            </div>
+            {verifStatus === 'conducteur_rejeté' && motifRejetConducteur && (
+              <div className="notice warn" style={{ textAlign: 'left', width: '100%' }}>
+                <strong>Motif :</strong> {motifRejetConducteur}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
+              {cfg.cta && (
+                <button type="button" className="btn btn-primary btn-lg" onClick={() => router.push(cfg.cta!.href)}>
+                  {cfg.cta.label}
+                </button>
+              )}
+              <button type="button" className="btn btn-outline btn-lg" onClick={() => { setServiceType(null); setVerifStatus('idle') }}>
+                Retour au choix
+              </button>
+            </div>
+          </div>
         </div>
       </>
     )
@@ -125,14 +383,42 @@ export default function PublierPage() {
         <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {serviceType !== 'location' ? (
             <>
+              {/* Sélecteur de véhicule */}
+              {verifiedVehicules.length > 0 && (
+                <div className="field">
+                  <label className="field-label">Véhicule utilisé pour ce trajet</label>
+                  <select className="select" value={selectedVehiculeId} onChange={e => setSelectedVehiculeId(e.target.value)} required>
+                    {verifiedVehicules.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.marque && v.modele ? `${v.marque} ${v.modele}` : 'Véhicule'}{v.type_vehicule ? ` (${v.type_vehicule})` : ''}{v.plaque ? ` — ${v.plaque}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="field">
                   <label className="field-label">Ville de départ</label>
-                  <input className="input" type="text" value={depart} onChange={e => setDepart(e.target.value)} required placeholder="Ex: Douala, Akwa" />
+                  <AddressAutocomplete
+                    value={depart.label}
+                    onChange={(val) => setDepart({ label: val })}
+                    onSelect={(sel: AddressSelection) => setDepart(sel)}
+                    placeholder="Ex: Douala, Akwa"
+                    inputClassName="input"
+                    required
+                  />
                 </div>
                 <div className="field">
                   <label className="field-label">Ville d&rsquo;arrivée</label>
-                  <input className="input" type="text" value={arrivee} onChange={e => setArrivee(e.target.value)} required placeholder="Ex: Yaoundé, Centre-ville" />
+                  <AddressAutocomplete
+                    value={arrivee.label}
+                    onChange={(val) => setArrivee({ label: val })}
+                    onSelect={(sel: AddressSelection) => setArrivee(sel)}
+                    placeholder="Ex: Yaoundé, Centre-ville"
+                    inputClassName="input"
+                    required
+                  />
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -220,11 +506,56 @@ export default function PublierPage() {
               </div>
               <div className="field">
                 <label className="field-label">Lieu de disponibilité</label>
-                <input className="input" type="text" value={lieuLabel} onChange={e => setLieuLabel(e.target.value)} required placeholder="Ex: Douala, Bonapriso" />
+                <AddressAutocomplete
+                  value={lieu.label}
+                  onChange={(val) => setLieu({ label: val })}
+                  onSelect={(sel: AddressSelection) => setLieu(sel)}
+                  placeholder="Ex: Douala, Bonapriso"
+                  inputClassName="input"
+                  required
+                />
               </div>
               <div className="field">
                 <label className="field-label">Prix par jour (FCFA)</label>
                 <input className="input" type="number" value={prix} onChange={e => setPrix(e.target.value)} required placeholder="Ex: 25000" min="0" />
+              </div>
+              <div className="field">
+                <label className="field-label">Équipements <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 16px', marginTop: 8 }}>
+                  {EQUIPEMENTS_VEHICULE.map(eq => (
+                    <label key={eq} className="checkbox-row">
+                      <input type="checkbox" checked={equipements.includes(eq)} onChange={() => toggleEquipement(eq)} />
+                      <span style={{ fontSize: 14 }}>{eq}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="field">
+                <label className="field-label">
+                  Photos du véhicule <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({photos.length}/5 — min 1)</span>
+                </label>
+                {photos.length > 0 && (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                    {photos.map((file, i) => (
+                      <div key={i} style={{ position: 'relative', width: 90, height: 70 }}>
+                        <img src={URL.createObjectURL(file)} alt={`Photo ${i + 1}`}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />
+                        <button type="button" onClick={() => removePhoto(i)}
+                          style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {photos.length < 5 && (
+                  <>
+                    <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline btn-sm">
+                      + Ajouter des photos
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}

@@ -15,6 +15,7 @@ const schema = z.object({
   lieu_lng: z.number().optional().nullable(),
   prix_jour: z.number().positive(),
   photos_urls: z.array(z.string()).min(1),
+  equipements: z.array(z.string()).optional().nullable(),
   description: z.string().optional().nullable(),
 })
 
@@ -25,15 +26,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
-  // Check transporteur verified
+  // Permis conducteur vérifié (location aussi requiert le permis)
   const { data: profil } = await supabase
     .from('profils_transporteur')
-    .select('statut_verification')
+    .select('statut_conducteur')
     .eq('user_id', user.id)
     .single()
 
-  if (!profil || profil.statut_verification !== 'vérifié') {
-    return NextResponse.json({ error: 'Profil transporteur non vérifié' }, { status: 403 })
+  if (!profil || profil.statut_conducteur !== 'vérifié') {
+    return NextResponse.json({ error: 'Permis conducteur non vérifié' }, { status: 403 })
   }
 
   const body = await req.json()

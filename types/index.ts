@@ -1,5 +1,7 @@
 export type UserRole = 'user' | 'admin'
 
+export type StatutConducteur = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+
 export type StatutVerification = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
 
 export type StatutTrajet = 'actif' | 'complet' | 'annulé'
@@ -34,7 +36,20 @@ export interface User {
   created_at: string
 }
 
+// Conductor-level profile (1-to-1 with user) — permis only
 export interface ProfilTransporteur {
+  id: string
+  user_id: string
+  permis_url?: string
+  statut_conducteur: StatutConducteur
+  motif_rejet?: string
+  verifie_par?: string
+  verifie_le?: string
+  created_at: string
+}
+
+// Vehicle-level profile (1-to-N with user) — each verified independently
+export interface VehiculeTransporteur {
   id: string
   user_id: string
   type_vehicule?: TypeVehicule
@@ -45,7 +60,7 @@ export interface ProfilTransporteur {
   capacite_kg?: number
   volume_m3?: number
   types_colis_acceptes?: TypeColis[]
-  permis_url?: string
+  equipements?: string[]
   carte_grise_url?: string
   photo_vehicule_url?: string
   statut_verification: StatutVerification
@@ -53,11 +68,13 @@ export interface ProfilTransporteur {
   verifie_par?: string
   verifie_le?: string
   created_at: string
+  users?: Pick<User, 'id' | 'nom' | 'telephone' | 'ville' | 'photo_url'>
 }
 
 export interface Trajet {
   id: string
   user_id: string
+  vehicule_transporteur_id?: string
   type: TypeTrajet
   depart_label: string
   depart_lat?: number

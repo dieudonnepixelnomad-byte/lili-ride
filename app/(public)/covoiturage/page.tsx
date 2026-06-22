@@ -79,7 +79,7 @@ export default async function CovoituragePage({ searchParams }: Props) {
                   <div style={{ fontSize: 32 }}>🚗</div>
                   <h3 style={{ marginTop: 16, fontSize: 22 }}>Aucun trajet disponible</h3>
                   <p style={{ marginTop: 8, color: 'var(--ink-3)' }}>Essayez d&rsquo;autres dates ou destinations, ou publiez votre propre trajet.</p>
-                  <Link href="/inscription" className="btn btn-primary" style={{ marginTop: 24 }}>Publier un trajet</Link>
+                  <Link href="/connexion" className="btn btn-primary" style={{ marginTop: 24 }}>Publier un trajet</Link>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>

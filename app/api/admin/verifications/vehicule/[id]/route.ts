@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
 const schema = z.object({
-  statut_conducteur: z.enum(['vérifié', 'rejeté']),
+  statut_verification: z.enum(['vérifié', 'rejeté']),
   motif_rejet: z.string().optional().nullable(),
 })
 
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const { error } = await supabase
-    .from('profils_transporteur')
+    .from('vehicules_transporteur')
     .update({
       ...parsed.data,
       verifie_par: user.id,

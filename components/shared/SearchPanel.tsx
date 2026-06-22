@@ -2,8 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import AddressAutocomplete, { type AddressSelection } from '@/components/shared/AddressAutocomplete'
 
 type TabType = 'covoiturage' | 'colis' | 'location'
+
+interface AddressState {
+  label: string
+  lat?: number
+  lng?: number
+}
 
 const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   {
@@ -41,6 +48,17 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   },
 ]
 
+const inlineInputStyle: React.CSSProperties = {
+  border: 'none',
+  padding: 0,
+  fontSize: 15,
+  color: 'var(--ink)',
+  background: 'transparent',
+  outline: 'none',
+  fontFamily: 'inherit',
+  width: '100%',
+}
+
 interface Props {
   defaultTab?: TabType
   defaultDepart?: string
@@ -51,17 +69,29 @@ interface Props {
 export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart = '', defaultArrivee = '', defaultDate = '' }: Props) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
-  const [depart, setDepart] = useState(defaultDepart)
-  const [arrivee, setArrivee] = useState(defaultArrivee)
+  const [depart, setDepart] = useState<AddressState>({ label: defaultDepart })
+  const [arrivee, setArrivee] = useState<AddressState>({ label: defaultArrivee })
   const [date, setDate] = useState(defaultDate)
   const [passagers, setPassagers] = useState('1')
+
+  function handleDepartSelect(sel: AddressSelection) {
+    setDepart(sel)
+  }
+
+  function handleArriveeSelect(sel: AddressSelection) {
+    setArrivee(sel)
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const params = new URLSearchParams()
-    if (depart) params.set('depart', depart)
-    if (arrivee) params.set('arrivee', arrivee)
+    if (depart.label) params.set('depart', depart.label)
+    if (arrivee.label) params.set('arrivee', arrivee.label)
     if (date) params.set('date', date)
+    if (depart.lat != null) params.set('depart_lat', depart.lat.toString())
+    if (depart.lng != null) params.set('depart_lng', depart.lng.toString())
+    if (arrivee.lat != null) params.set('arrivee_lat', arrivee.lat.toString())
+    if (arrivee.lng != null) params.set('arrivee_lng', arrivee.lng.toString())
     if (activeTab === 'covoiturage' && passagers !== '1') params.set('passagers', passagers)
     router.push(`/${activeTab}?${params.toString()}`)
   }
@@ -119,24 +149,24 @@ export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart 
           <label style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>
             {activeTab === 'location' ? 'Ville' : 'Départ'}
           </label>
-          <input
-            type="text"
-            value={depart}
-            onChange={e => setDepart(e.target.value)}
+          <AddressAutocomplete
+            value={depart.label}
+            onChange={(val) => setDepart({ label: val })}
+            onSelect={handleDepartSelect}
             placeholder="Ville ou quartier"
-            style={{ border: 'none', padding: 0, fontSize: 15, color: 'var(--ink)', background: 'transparent', outline: 'none', fontFamily: 'inherit' }}
+            inputStyle={inlineInputStyle}
           />
         </div>
 
         {activeTab !== 'location' && (
           <div style={{ background: 'var(--surface)', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>Arrivée</label>
-            <input
-              type="text"
-              value={arrivee}
-              onChange={e => setArrivee(e.target.value)}
+            <AddressAutocomplete
+              value={arrivee.label}
+              onChange={(val) => setArrivee({ label: val })}
+              onSelect={handleArriveeSelect}
               placeholder="Ville ou quartier"
-              style={{ border: 'none', padding: 0, fontSize: 15, color: 'var(--ink)', background: 'transparent', outline: 'none', fontFamily: 'inherit' }}
+              inputStyle={inlineInputStyle}
             />
           </div>
         )}

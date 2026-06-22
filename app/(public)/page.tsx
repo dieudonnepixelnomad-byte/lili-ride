@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import SearchPanel from '@/components/shared/SearchPanel'
 
 export default function LandingPage() {
@@ -39,7 +40,7 @@ export default function LandingPage() {
 
               <div style={{ display: 'flex', gap: 12, marginTop: 36, flexWrap: 'wrap' }}>
                 <Link href="/covoiturage" className="btn btn-primary btn-lg">Trouver un trajet</Link>
-                <Link href="/inscription" className="btn btn-outline btn-lg">Publier mon trajet</Link>
+                <Link href="/connexion" className="btn btn-outline btn-lg">Publier mon trajet</Link>
               </div>
 
               <div style={{ display: 'flex', gap: 32, marginTop: 56 }}>
@@ -66,19 +67,13 @@ export default function LandingPage() {
               overflow: 'hidden',
               boxShadow: 'var(--shadow-lg)',
             }}>
-              <div style={{
-                position: 'absolute', inset: 0,
-                background: 'repeating-linear-gradient(135deg, #DDE3EA, #DDE3EA 10px, #E8EDF2 10px, #E8EDF2 20px)',
-              }} />
-              <div style={{
-                position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                background: 'rgba(255,255,255,0.92)', border: '1px solid var(--line)',
-                padding: '8px 14px', borderRadius: 999,
-                fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.08em',
-                color: 'var(--ink-3)',
-              }}>
-                PHOTO — VOITURE SUR ROUTE CAMEROUNAISE
-              </div>
+              <Image
+                src="/images/voiture_accueil.png"
+                alt="Voiture sur route camerounaise"
+                fill
+                style={{ objectFit: 'cover' }}
+                priority
+              />
               {/* Overlay card */}
               <div style={{
                 position: 'absolute',
@@ -252,7 +247,7 @@ export default function LandingPage() {
                 Pas besoin de carte bancaire, pas d&rsquo;application à télécharger. Les profils transporteurs sont systématiquement vérifiés par notre équipe avant toute publication. Les prix s&rsquo;affichent en francs CFA.
               </p>
               <div style={{ marginTop: 32 }}>
-                <Link href="/inscription" className="btn btn-primary btn-lg">Créer mon compte gratuitement</Link>
+                <Link href="/connexion" className="btn btn-primary btn-lg">Créer mon compte gratuitement</Link>
               </div>
             </div>
 
@@ -361,7 +356,7 @@ export default function LandingPage() {
                 Publiez vos trajets covoiturage, vos disponibilités pour le transport de colis ou mettez votre véhicule à la location. La vérification est gratuite et prend 24h en moyenne.
               </p>
               <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
-                <Link href="/inscription" className="btn btn-accent btn-lg">Devenir transporteur</Link>
+                <Link href="/connexion" className="btn btn-accent btn-lg">Devenir transporteur</Link>
                 <Link href="/support" className="btn btn-outline btn-lg" style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>Parler à l&rsquo;équipe</Link>
               </div>
             </div>

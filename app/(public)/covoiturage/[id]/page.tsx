@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Avatar from '@/components/shared/Avatar'
 import DemandeForm from '@/components/shared/DemandeForm'
+import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
 import type { Trajet } from '@/types'
 
 interface Props {
@@ -69,15 +70,17 @@ export default async function CovoiturageDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Map mock */}
-            <div className="map-mock" style={{ marginTop: 32, height: 200 }}>
-              <div className="map-grid" />
-              <div style={{ position: 'absolute', left: '20%', top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, background: 'var(--primary)', border: '3px solid #fff', borderRadius: '50%', boxShadow: '0 2px 8px rgba(26,78,138,0.4)' }} />
-              <div style={{ position: 'absolute', right: '20%', top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, background: 'var(--accent)', border: '3px solid #fff', borderRadius: '50%', boxShadow: '0 2px 8px rgba(15,138,107,0.4)' }} />
-              <div style={{ position: 'absolute', left: '20%', right: '20%', top: '50%', height: 3, background: 'linear-gradient(90deg, var(--primary), var(--accent))', borderRadius: 999, transform: 'translateY(-50%)' }} />
-              <div style={{ position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)', background: 'rgba(255,255,255,0.9)', border: '1px solid var(--line)', padding: '4px 12px', borderRadius: 'var(--r-pill)', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>
-                {t.depart_label} → {t.arrivee_label}
-              </div>
+            {/* Carte du trajet */}
+            <div style={{ marginTop: 32 }}>
+              <TrajetMapWrapper
+                departLabel={t.depart_label}
+                departLat={t.depart_lat ?? null}
+                departLng={t.depart_lng ?? null}
+                arriveeLabel={t.arrivee_label}
+                arriveeLat={t.arrivee_lat ?? null}
+                arriveeLng={t.arrivee_lng ?? null}
+                height={260}
+              />
             </div>
 
             {/* Description */}
