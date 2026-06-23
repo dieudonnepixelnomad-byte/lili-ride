@@ -26,15 +26,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
-  // Permis conducteur vérifié
   const { data: profil } = await supabase
     .from('profils_transporteur')
-    .select('statut_conducteur')
+    .select('statut_cni, statut_permis')
     .eq('user_id', user.id)
     .single()
 
-  if (!profil || profil.statut_conducteur !== 'vérifié') {
-    return NextResponse.json({ error: 'Permis conducteur non vérifié' }, { status: 403 })
+  if (!profil || profil.statut_cni !== 'vérifié') {
+    return NextResponse.json({ error: 'CNI non vérifiée' }, { status: 403 })
+  }
+  if (profil.statut_permis !== 'vérifié') {
+    return NextResponse.json({ error: 'Permis de conduire non vérifié' }, { status: 403 })
   }
 
   const body = await req.json()
@@ -43,7 +45,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Données invalides', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  // Véhicule appartient à l'utilisateur ET est vérifié
   const { data: vehicule } = await supabase
     .from('vehicules_transporteur')
     .select('statut_verification')

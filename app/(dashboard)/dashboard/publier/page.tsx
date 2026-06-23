@@ -18,9 +18,12 @@ type VerifStatus =
   | 'idle'
   | 'checking'
   | 'ok'
-  | 'conducteur_non_soumis'
-  | 'conducteur_en_attente'
-  | 'conducteur_rejeté'
+  | 'cni_non_soumis'
+  | 'cni_en_attente'
+  | 'cni_rejeté'
+  | 'permis_non_soumis'
+  | 'permis_en_attente'
+  | 'permis_rejeté'
   | 'vehicule_manquant'
 
 const TYPES_COLIS = ['documents', 'petit', 'volumineux', 'fragile']
@@ -47,7 +50,8 @@ export default function PublierPage() {
   const [error, setError] = useState('')
 
   const [verifStatus, setVerifStatus] = useState<VerifStatus>('idle')
-  const [motifRejetConducteur, setMotifRejetConducteur] = useState('')
+  const [motifRejetCni, setMotifRejetCni] = useState('')
+  const [motifRejetPermis, setMotifRejetPermis] = useState('')
   const [verifiedVehicules, setVerifiedVehicules] = useState<VehiculeTransporteur[]>([])
   const [selectedVehiculeId, setSelectedVehiculeId] = useState('')
 
@@ -80,64 +84,60 @@ export default function PublierPage() {
 
   async function handleSelectService(type: ServiceType) {
     setServiceType(type)
+    setVerifStatus('checking')
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setVerifStatus('cni_non_soumis'); return }
+
+    const { data: profil } = await supabase
+      .from('profils_transporteur')
+      .select('statut_cni, motif_rejet_cni, statut_permis, motif_rejet_permis')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    // CNI required for all services
+    if (!profil || profil.statut_cni === 'non_soumis') {
+      setVerifStatus('cni_non_soumis'); return
+    }
+    if (profil.statut_cni === 'en_attente') {
+      setVerifStatus('cni_en_attente'); return
+    }
+    if (profil.statut_cni === 'rejeté') {
+      setMotifRejetCni(profil.motif_rejet_cni ?? '')
+      setVerifStatus('cni_rejeté'); return
+    }
 
     if (type === 'location') {
-      // Location only needs conducteur verified
-      setVerifStatus('checking')
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setVerifStatus('conducteur_non_soumis'); return }
-
-      const { data: profil } = await supabase
-        .from('profils_transporteur')
-        .select('statut_conducteur, motif_rejet')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (!profil || profil.statut_conducteur === 'non_soumis') {
-        setVerifStatus('conducteur_non_soumis')
-      } else if (profil.statut_conducteur === 'en_attente') {
-        setVerifStatus('conducteur_en_attente')
-      } else if (profil.statut_conducteur === 'rejeté') {
-        setMotifRejetConducteur(profil.motif_rejet ?? '')
-        setVerifStatus('conducteur_rejeté')
-      } else {
-        setVerifStatus('ok')
-      }
+      // Location: CNI only
+      setVerifStatus('ok')
       return
     }
 
-    // Covoiturage / colis: need conducteur + at least one verified vehicle
-    setVerifStatus('checking')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setVerifStatus('conducteur_non_soumis'); return }
-
-    const [{ data: profil }, { data: vehicules }] = await Promise.all([
-      supabase
-        .from('profils_transporteur')
-        .select('statut_conducteur, motif_rejet')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('vehicules_transporteur')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('statut_verification', 'vérifié'),
-    ])
-
-    if (!profil || profil.statut_conducteur === 'non_soumis') {
-      setVerifStatus('conducteur_non_soumis')
-    } else if (profil.statut_conducteur === 'en_attente') {
-      setVerifStatus('conducteur_en_attente')
-    } else if (profil.statut_conducteur === 'rejeté') {
-      setMotifRejetConducteur(profil.motif_rejet ?? '')
-      setVerifStatus('conducteur_rejeté')
-    } else if (!vehicules || vehicules.length === 0) {
-      setVerifStatus('vehicule_manquant')
-    } else {
-      setVerifiedVehicules(vehicules as VehiculeTransporteur[])
-      setSelectedVehiculeId(vehicules[0].id)
-      setVerifStatus('ok')
+    // Covoiturage / colis: CNI + permis + at least one verified vehicle
+    if (!profil.statut_permis || profil.statut_permis === 'non_soumis') {
+      setVerifStatus('permis_non_soumis'); return
     }
+    if (profil.statut_permis === 'en_attente') {
+      setVerifStatus('permis_en_attente'); return
+    }
+    if (profil.statut_permis === 'rejeté') {
+      setMotifRejetPermis(profil.motif_rejet_permis ?? '')
+      setVerifStatus('permis_rejeté'); return
+    }
+
+    const { data: vehicules } = await supabase
+      .from('vehicules_transporteur')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('statut_verification', 'vérifié')
+
+    if (!vehicules || vehicules.length === 0) {
+      setVerifStatus('vehicule_manquant'); return
+    }
+
+    setVerifiedVehicules(vehicules as VehiculeTransporteur[])
+    setSelectedVehiculeId(vehicules[0].id)
+    setVerifStatus('ok')
   }
 
   function toggleColis(t: string) {
@@ -298,30 +298,50 @@ export default function PublierPage() {
 
   if (verifStatus !== 'ok' && verifStatus !== 'idle') {
     const configs: Record<Exclude<VerifStatus, 'idle' | 'checking' | 'ok'>, {
-      icon: string; title: string; text: string; cta: { label: string; href: string } | null
+      icon: string; title: string; text: string; motif?: string; cta: { label: string; href: string } | null
     }> = {
-      conducteur_non_soumis: {
+      cni_non_soumis: {
         icon: '📋',
-        title: 'Complétez votre profil conducteur',
-        text: 'Fournissez votre permis de conduire et soumettez-le pour validation. Dossier examiné sous 24h.',
+        title: 'Carte Nationale d\'Identité manquante',
+        text: 'Votre CNI (recto + verso) n\'a pas encore été soumise. Ajoutez-la dans votre profil transporteur et soumettez-la pour vérification.',
         cta: { label: 'Compléter mon profil', href: '/dashboard/profil' },
       },
-      conducteur_en_attente: {
+      cni_en_attente: {
         icon: '⏳',
-        title: 'Permis en cours d\'examen',
-        text: 'Notre équipe vérifie votre permis de conduire. Vous pourrez publier dès validation — généralement sous 24h.',
+        title: 'CNI en cours de vérification',
+        text: 'Votre Carte Nationale d\'Identité est en cours d\'examen par notre équipe. Vous serez débloqué dès validation — généralement sous 24h.',
         cta: null,
       },
-      conducteur_rejeté: {
+      cni_rejeté: {
+        icon: '⚠️',
+        title: 'CNI rejetée',
+        text: 'Votre Carte Nationale d\'Identité a été rejetée. Corrigez le document et soumettez-le à nouveau.',
+        motif: motifRejetCni,
+        cta: { label: 'Corriger ma CNI', href: '/dashboard/profil' },
+      },
+      permis_non_soumis: {
+        icon: '📋',
+        title: 'Permis de conduire manquant',
+        text: 'Votre CNI est vérifiée. Il vous reste à fournir votre permis de conduire et le soumettre pour validation avant de pouvoir publier.',
+        cta: { label: 'Compléter mon profil', href: '/dashboard/profil' },
+      },
+      permis_en_attente: {
+        icon: '⏳',
+        title: 'Permis en cours de vérification',
+        text: 'Votre CNI est validée. Notre équipe vérifie maintenant votre permis de conduire. Vous pourrez publier dès validation — généralement sous 24h.',
+        cta: null,
+      },
+      permis_rejeté: {
         icon: '⚠️',
         title: 'Permis rejeté',
-        text: motifRejetConducteur || 'Des informations sont incorrectes dans votre dossier. Corrigez-les pour relancer la vérification.',
-        cta: { label: 'Corriger mon dossier', href: '/dashboard/profil' },
+        text: 'Votre permis de conduire a été rejeté. Corrigez le document et soumettez-le à nouveau.',
+        motif: motifRejetPermis,
+        cta: { label: 'Corriger mon permis', href: '/dashboard/profil' },
       },
       vehicule_manquant: {
         icon: '🚗',
         title: 'Aucun véhicule vérifié',
-        text: 'Votre permis est validé. Ajoutez un véhicule et soumettez-le pour vérification afin de publier des trajets.',
+        text: 'Votre CNI et votre permis sont validés. Il vous reste à ajouter un véhicule avec sa carte grise et le soumettre pour vérification.',
         cta: { label: 'Gérer mes véhicules', href: '/dashboard/profil' },
       },
     }
@@ -345,9 +365,9 @@ export default function PublierPage() {
               <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 22, color: 'var(--ink)', marginBottom: 12 }}>{cfg.title}</h2>
               <p style={{ fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.7, maxWidth: 400 }}>{cfg.text}</p>
             </div>
-            {verifStatus === 'conducteur_rejeté' && motifRejetConducteur && (
+            {cfg.motif && (
               <div className="notice warn" style={{ textAlign: 'left', width: '100%' }}>
-                <strong>Motif :</strong> {motifRejetConducteur}
+                <strong>Motif :</strong> {cfg.motif}
               </div>
             )}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>

@@ -38,21 +38,35 @@ export interface Database {
         Row: {
           id: string
           user_id: string
+          // CNI
+          cni_recto_url: string | null
+          cni_verso_url: string | null
+          statut_cni: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_cni: string | null
+          verifie_cni_par: string | null
+          verifie_cni_le: string | null
+          // Permis de conduire
           permis_url: string | null
-          statut_conducteur: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
-          motif_rejet: string | null
-          verifie_par: string | null
-          verifie_le: string | null
+          statut_permis: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_permis: string | null
+          verifie_permis_par: string | null
+          verifie_permis_le: string | null
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
+          cni_recto_url?: string | null
+          cni_verso_url?: string | null
+          statut_cni?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_cni?: string | null
+          verifie_cni_par?: string | null
+          verifie_cni_le?: string | null
           permis_url?: string | null
-          statut_conducteur?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
-          motif_rejet?: string | null
-          verifie_par?: string | null
-          verifie_le?: string | null
+          statut_permis?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_permis?: string | null
+          verifie_permis_par?: string | null
+          verifie_permis_le?: string | null
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['profils_transporteur']['Insert']>
@@ -159,9 +173,15 @@ export interface Database {
           lieu_lng: number | null
           prix_jour: number
           photos_urls: string[]
+          equipements: string[] | null
           disponible: boolean
           description: string | null
           statut: 'actif' | 'suspendu'
+          carte_grise_url: string | null
+          statut_carte_grise: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_cg: string | null
+          verifie_par: string | null
+          verifie_le: string | null
           created_at: string
         }
         Insert: {
@@ -179,9 +199,15 @@ export interface Database {
           lieu_lng?: number | null
           prix_jour: number
           photos_urls?: string[]
+          equipements?: string[] | null
           disponible?: boolean
           description?: string | null
           statut?: 'actif' | 'suspendu'
+          carte_grise_url?: string | null
+          statut_carte_grise?: 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+          motif_rejet_cg?: string | null
+          verifie_par?: string | null
+          verifie_le?: string | null
           created_at?: string
         }
         Update: Partial<Database['public']['Tables']['vehicules']['Insert']>

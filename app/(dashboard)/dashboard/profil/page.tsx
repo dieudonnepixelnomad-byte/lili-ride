@@ -67,8 +67,18 @@ export default function ProfilPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // Permis (profils_transporteur)
+  // Profil transporteur
   const [profil, setProfil] = useState<ProfilTransporteur | null>(null)
+
+  // CNI
+  const [cniRectoFile, setCniRectoFile] = useState<File | null>(null)
+  const [cniVersoFile, setCniVersoFile] = useState<File | null>(null)
+  const [cniSaving, setCniSaving] = useState(false)
+  const [cniError, setCniError] = useState('')
+  const cniRectoRef = useRef<HTMLInputElement>(null)
+  const cniVersoRef = useRef<HTMLInputElement>(null)
+
+  // Permis
   const [permisFile, setPermisFile] = useState<File | null>(null)
   const [permisSaving, setPermisSaving] = useState(false)
   const [permisError, setPermisError] = useState('')
@@ -120,6 +130,84 @@ export default function ProfilPage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  // ── CNI ────────────────────────────────────────────────────────────────────
+  async function uploadDoc(authId: string, file: File, prefix: string): Promise<string> {
+    const ext = file.name.split('.').pop() ?? 'jpg'
+    const path = `${authId}/${prefix}-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+    if (error) throw new Error(`Upload ${prefix} échoué : ${error.message}`)
+    return path
+  }
+
+  async function saveCni(e: React.FormEvent) {
+    e.preventDefault()
+    setCniError('')
+    setCniSaving(true)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('Non authentifié')
+
+      let cniRectoUrl = profil?.cni_recto_url ?? null
+      let cniVersoUrl = profil?.cni_verso_url ?? null
+
+      if (cniRectoFile) {
+        cniRectoUrl = await uploadDoc(authUser.id, cniRectoFile, 'cni-recto')
+        setCniRectoFile(null)
+        if (cniRectoRef.current) cniRectoRef.current.value = ''
+      }
+      if (cniVersoFile) {
+        cniVersoUrl = await uploadDoc(authUser.id, cniVersoFile, 'cni-verso')
+        setCniVersoFile(null)
+        if (cniVersoRef.current) cniVersoRef.current.value = ''
+      }
+
+      if (profil?.id) {
+        const { data } = await supabase
+          .from('profils_transporteur')
+          .update({ cni_recto_url: cniRectoUrl, cni_verso_url: cniVersoUrl })
+          .eq('id', profil.id)
+          .select()
+          .single()
+        setProfil(data as ProfilTransporteur)
+      } else {
+        const { data } = await supabase
+          .from('profils_transporteur')
+          .insert({
+            user_id: authUser.id,
+            cni_recto_url: cniRectoUrl,
+            cni_verso_url: cniVersoUrl,
+            statut_cni: 'non_soumis',
+            statut_permis: 'non_soumis',
+          })
+          .select()
+          .single()
+        setProfil(data as ProfilTransporteur)
+      }
+    } catch (err: unknown) {
+      setCniError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.')
+    } finally {
+      setCniSaving(false)
+    }
+  }
+
+  async function soumettreCni() {
+    if (!profil?.id) return
+    if (!profil.cni_recto_url || !profil.cni_verso_url) {
+      setCniError('Fournissez le recto ET le verso de votre CNI avant de soumettre.')
+      return
+    }
+    setCniError('')
+    const { error } = await supabase
+      .from('profils_transporteur')
+      .update({ statut_cni: 'en_attente' })
+      .eq('id', profil.id)
+    if (error) {
+      setCniError(`Erreur lors de la soumission : ${error.message}`)
+      return
+    }
+    setProfil(p => p ? { ...p, statut_cni: 'en_attente' } : p)
+  }
+
   // ── Permis ─────────────────────────────────────────────────────────────────
   async function savePermis(e: React.FormEvent) {
     e.preventDefault()
@@ -132,11 +220,7 @@ export default function ProfilPage() {
       let permisUrl = profil?.permis_url ?? null
 
       if (permisFile) {
-        const ext = permisFile.name.split('.').pop() ?? 'jpg'
-        const path = `${authUser.id}/permis-${Date.now()}.${ext}`
-        const { error: upErr } = await supabase.storage.from('documents').upload(path, permisFile, { upsert: true })
-        if (upErr) throw new Error(`Upload permis échoué : ${upErr.message}`)
-        permisUrl = path
+        permisUrl = await uploadDoc(authUser.id, permisFile, 'permis')
         setPermisFile(null)
         if (permisRef.current) permisRef.current.value = ''
       }
@@ -152,7 +236,12 @@ export default function ProfilPage() {
       } else {
         const { data } = await supabase
           .from('profils_transporteur')
-          .insert({ user_id: authUser.id, permis_url: permisUrl, statut_conducteur: 'non_soumis' })
+          .insert({
+            user_id: authUser.id,
+            permis_url: permisUrl,
+            statut_cni: 'non_soumis',
+            statut_permis: 'non_soumis',
+          })
           .select()
           .single()
         setProfil(data as ProfilTransporteur)
@@ -173,13 +262,13 @@ export default function ProfilPage() {
     setPermisError('')
     const { error } = await supabase
       .from('profils_transporteur')
-      .update({ statut_conducteur: 'en_attente' })
+      .update({ statut_permis: 'en_attente' })
       .eq('id', profil.id)
     if (error) {
       setPermisError(`Erreur lors de la soumission : ${error.message}`)
       return
     }
-    setProfil(p => p ? { ...p, statut_conducteur: 'en_attente' } : p)
+    setProfil(p => p ? { ...p, statut_permis: 'en_attente' } : p)
   }
 
   // ── Véhicules ──────────────────────────────────────────────────────────────
@@ -306,7 +395,9 @@ export default function ProfilPage() {
     setVehicules(vs => vs.map(v => v.id === vehiculeId ? { ...v, statut_verification: 'en_attente' } : v))
   }
 
-  const permisCanEdit = !profil || profil.statut_conducteur === 'non_soumis' || profil.statut_conducteur === 'rejeté'
+  const cniCanEdit = !profil || profil.statut_cni === 'non_soumis' || profil.statut_cni === 'rejeté'
+  const cniCanSubmit = cniCanEdit && !!profil?.cni_recto_url && !!profil?.cni_verso_url
+  const permisCanEdit = !profil || profil.statut_permis === 'non_soumis' || profil.statut_permis === 'rejeté'
   const permisCanSubmit = permisCanEdit && !!profil?.permis_url
 
   if (!user) return <div style={{ padding: 40, color: 'var(--ink-3)' }}>Chargement…</div>
@@ -368,16 +459,89 @@ export default function ProfilPage() {
       {activeTab === 'transporteur' && (
         <div style={{ maxWidth: 720, display: 'flex', flexDirection: 'column', gap: 28 }}>
 
-          {/* Section Permis */}
+          {/* Section CNI */}
           <div>
-            <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', marginBottom: 12 }}>Permis de conduire</div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>Carte Nationale d&rsquo;Identité</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>Requis pour tous les services (covoiturage, colis, location)</div>
             <div className="card card-pad">
               {profil && (
                 <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>Statut :</span>
-                  <StatusBadge statut={profil.statut_conducteur} />
-                  {profil.statut_conducteur === 'rejeté' && profil.motif_rejet && (
-                    <span style={{ fontSize: 13, color: 'var(--danger)', marginLeft: 4 }}>— {profil.motif_rejet}</span>
+                  <StatusBadge statut={profil.statut_cni} />
+                  {profil.statut_cni === 'rejeté' && profil.motif_rejet_cni && (
+                    <span style={{ fontSize: 13, color: 'var(--danger)', marginLeft: 4 }}>— {profil.motif_rejet_cni}</span>
+                  )}
+                </div>
+              )}
+
+              {cniError && <div className="notice warn" style={{ marginBottom: 16 }}>{cniError}</div>}
+
+              <form onSubmit={saveCni} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {[
+                  { label: 'Recto', file: cniRectoFile, setFile: setCniRectoFile, ref: cniRectoRef, stored: profil?.cni_recto_url, prefix: 'recto' as const },
+                  { label: 'Verso', file: cniVersoFile, setFile: setCniVersoFile, ref: cniVersoRef, stored: profil?.cni_verso_url, prefix: 'verso' as const },
+                ].map(({ label, file, setFile, ref, stored }) => (
+                  <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '14px 0', borderBottom: '1px solid var(--line)' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: 14 }}>
+                        CNI — {label} <span style={{ color: 'var(--danger)' }}>*</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>
+                        {file ? (
+                          <span style={{ color: 'var(--warning)' }}>En attente de sauvegarde : {file.name}</span>
+                        ) : stored ? (
+                          <span style={{ color: 'var(--success)' }}>✓ Document fourni</span>
+                        ) : (
+                          <span style={{ color: 'var(--danger)' }}>Non fourni</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {file && (
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setFile(null); if (ref.current) ref.current.value = '' }}>Annuler</button>
+                      )}
+                      <input ref={ref} type="file" accept="image/*,.pdf" style={{ display: 'none' }} onChange={e => setFile(e.target.files?.[0] ?? null)} />
+                      {cniCanEdit && (
+                        <button type="button" className="btn btn-outline btn-sm" onClick={() => ref.current?.click()}>
+                          {stored ? 'Remplacer' : 'Ajouter'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {cniCanEdit && (
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <button type="submit" className="btn btn-outline" disabled={cniSaving}>
+                      {cniSaving ? 'Sauvegarde…' : 'Enregistrer'}
+                    </button>
+                    <button type="button" className="btn btn-primary" disabled={cniSaving || !cniCanSubmit} onClick={soumettreCni}>
+                      Soumettre pour vérification
+                    </button>
+                  </div>
+                )}
+
+                {(profil?.statut_cni === 'en_attente' || profil?.statut_cni === 'vérifié') && (
+                  <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>
+                    {profil.statut_cni === 'en_attente' && 'Votre CNI est en cours d\'examen. Édition bloquée pendant la vérification.'}
+                    {profil.statut_cni === 'vérifié' && 'CNI vérifiée.'}
+                  </p>
+                )}
+              </form>
+            </div>
+          </div>
+
+          {/* Section Permis */}
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>Permis de conduire</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>Requis uniquement pour le covoiturage et le transport de colis</div>
+            <div className="card card-pad">
+              {profil && (
+                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, color: 'var(--ink-2)' }}>Statut :</span>
+                  <StatusBadge statut={profil.statut_permis} />
+                  {profil.statut_permis === 'rejeté' && profil.motif_rejet_permis && (
+                    <span style={{ fontSize: 13, color: 'var(--danger)', marginLeft: 4 }}>— {profil.motif_rejet_permis}</span>
                   )}
                 </div>
               )}
@@ -425,10 +589,10 @@ export default function ProfilPage() {
                   </div>
                 )}
 
-                {(profil?.statut_conducteur === 'en_attente' || profil?.statut_conducteur === 'vérifié') && (
+                {(profil?.statut_permis === 'en_attente' || profil?.statut_permis === 'vérifié') && (
                   <p style={{ fontSize: 13, color: 'var(--ink-3)' }}>
-                    {profil.statut_conducteur === 'en_attente' && 'Votre permis est en cours d\'examen. Édition bloquée pendant la vérification.'}
-                    {profil.statut_conducteur === 'vérifié' && 'Permis vérifié. Vous pouvez publier des annonces avec vos véhicules vérifiés.'}
+                    {profil.statut_permis === 'en_attente' && 'Votre permis est en cours d\'examen. Édition bloquée pendant la vérification.'}
+                    {profil.statut_permis === 'vérifié' && 'Permis vérifié. Vous pouvez publier des annonces covoiturage/colis avec vos véhicules vérifiés.'}
                   </p>
                 )}
               </form>
@@ -437,14 +601,15 @@ export default function ProfilPage() {
 
           {/* Section Véhicules */}
           <div>
+            <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>Mes véhicules</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>Pour le covoiturage et le transport de colis — chaque véhicule est vérifié indépendamment</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)' }}>Mes véhicules</div>
+              <div />
               {!vehiculeForm && (
                 <button type="button" className="btn btn-outline btn-sm" onClick={openAddVehicule}>+ Ajouter un véhicule</button>
               )}
             </div>
 
-            {/* Liste des véhicules existants */}
             {vehicules.map(v => (
               <div key={v.id} className="card card-pad" style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -474,7 +639,6 @@ export default function ProfilPage() {
                   )}
                 </div>
 
-                {/* Inline edit form */}
                 {editingVehiculeId === v.id && vehiculeForm && (
                   <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
                     <VehiculeFormInline
@@ -498,7 +662,6 @@ export default function ProfilPage() {
               </div>
             )}
 
-            {/* Add form (when no editing) */}
             {vehiculeForm && !editingVehiculeId && (
               <div className="card card-pad">
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Nouveau véhicule</div>
@@ -613,7 +776,6 @@ function VehiculeFormInline({ form, setForm, onSave, onCancel, saving, error, ca
         </div>
       </div>
 
-      {/* Documents */}
       {[
         { label: 'Carte grise', ref: carteGriseRef, fileKey: 'carteGriseFile' as const, storedKey: 'carteGriseStored' as const, required: true },
         { label: 'Photo du véhicule', ref: photoVehiculeRef, fileKey: 'photoVehiculeFile' as const, storedKey: 'photoVehiculeStored' as const, required: false },

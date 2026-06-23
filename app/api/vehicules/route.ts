@@ -17,6 +17,7 @@ const schema = z.object({
   photos_urls: z.array(z.string()).min(1),
   equipements: z.array(z.string()).optional().nullable(),
   description: z.string().optional().nullable(),
+  carte_grise_url: z.string().optional().nullable(),
 })
 
 export async function POST(req: NextRequest) {
@@ -26,15 +27,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
-  // Permis conducteur vérifié (location aussi requiert le permis)
+  // Location requires CNI verified (no permis needed)
   const { data: profil } = await supabase
     .from('profils_transporteur')
-    .select('statut_conducteur')
+    .select('statut_cni')
     .eq('user_id', user.id)
     .single()
 
-  if (!profil || profil.statut_conducteur !== 'vérifié') {
-    return NextResponse.json({ error: 'Permis conducteur non vérifié' }, { status: 403 })
+  if (!profil || profil.statut_cni !== 'vérifié') {
+    return NextResponse.json({ error: 'CNI non vérifiée' }, { status: 403 })
   }
 
   const body = await req.json()
@@ -45,7 +46,13 @@ export async function POST(req: NextRequest) {
 
   const { data: vehicule, error } = await supabase
     .from('vehicules')
-    .insert({ ...parsed.data, user_id: user.id, disponible: true, statut: 'actif' })
+    .insert({
+      ...parsed.data,
+      user_id: user.id,
+      disponible: true,
+      statut: 'actif',
+      statut_carte_grise: parsed.data.carte_grise_url ? 'en_attente' : 'non_soumis',
+    })
     .select()
     .single()
 

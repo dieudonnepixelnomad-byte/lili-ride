@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 interface Props {
   id: string
-  type: 'conducteur' | 'vehicule'
+  type: 'cni' | 'permis' | 'vehicule' | 'vehicule-location'
 }
 
 export default function VerificationActions({ id, type }: Props) {
@@ -14,25 +14,40 @@ export default function VerificationActions({ id, type }: Props) {
   const [loading, setLoading] = useState<'approuver' | 'rejeter' | null>(null)
   const [error, setError] = useState('')
 
-  const patchUrl = type === 'conducteur'
-    ? `/api/admin/verifications/${id}`
-    : `/api/admin/verifications/vehicule/${id}`
+  function buildPatchUrl() {
+    if (type === 'vehicule') return `/api/admin/verifications/vehicule/${id}`
+    if (type === 'vehicule-location') return `/api/admin/verifications/vehicule-location/${id}`
+    return `/api/admin/verifications/${id}`
+  }
 
-  const approuverBody = type === 'conducteur'
-    ? { statut_conducteur: 'vérifié' }
-    : { statut_verification: 'vérifié' }
+  function buildApprouverBody() {
+    if (type === 'cni') return { champ: 'cni', statut: 'vérifié' }
+    if (type === 'permis') return { champ: 'permis', statut: 'vérifié' }
+    if (type === 'vehicule') return { statut_verification: 'vérifié' }
+    return { statut_carte_grise: 'vérifié' }
+  }
 
-  const rejeterBody = (motif: string) => type === 'conducteur'
-    ? { statut_conducteur: 'rejeté', motif_rejet: motif }
-    : { statut_verification: 'rejeté', motif_rejet: motif }
+  function buildRejeterBody(motif: string) {
+    if (type === 'cni') return { champ: 'cni', statut: 'rejeté', motif_rejet: motif }
+    if (type === 'permis') return { champ: 'permis', statut: 'rejeté', motif_rejet: motif }
+    if (type === 'vehicule') return { statut_verification: 'rejeté', motif_rejet: motif }
+    return { statut_carte_grise: 'rejeté', motif_rejet_cg: motif }
+  }
+
+  const labelEntity = {
+    cni: 'la CNI',
+    permis: 'le permis',
+    vehicule: 'le véhicule',
+    'vehicule-location': 'la carte grise',
+  }[type]
 
   async function approuver() {
     setLoading('approuver')
     setError('')
-    const res = await fetch(patchUrl, {
+    const res = await fetch(buildPatchUrl(), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(approuverBody),
+      body: JSON.stringify(buildApprouverBody()),
     })
     if (res.ok) {
       router.refresh()
@@ -50,10 +65,10 @@ export default function VerificationActions({ id, type }: Props) {
     }
     setLoading('rejeter')
     setError('')
-    const res = await fetch(patchUrl, {
+    const res = await fetch(buildPatchUrl(), {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(rejeterBody(motif)),
+      body: JSON.stringify(buildRejeterBody(motif)),
     })
     if (res.ok) {
       router.refresh()
@@ -63,8 +78,6 @@ export default function VerificationActions({ id, type }: Props) {
     }
     setLoading(null)
   }
-
-  const labelEntity = type === 'conducteur' ? 'le permis' : 'le véhicule'
 
   return (
     <div style={{ marginTop: 24 }}>

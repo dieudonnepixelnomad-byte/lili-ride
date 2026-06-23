@@ -2,18 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
-const schema = z.discriminatedUnion('champ', [
-  z.object({
-    champ: z.literal('cni'),
-    statut: z.enum(['vérifié', 'rejeté']),
-    motif_rejet: z.string().optional().nullable(),
-  }),
-  z.object({
-    champ: z.literal('permis'),
-    statut: z.enum(['vérifié', 'rejeté']),
-    motif_rejet: z.string().optional().nullable(),
-  }),
-])
+const schema = z.object({
+  statut_carte_grise: z.enum(['vérifié', 'rejeté']),
+  motif_rejet_cg: z.string().optional().nullable(),
+})
 
 interface Params {
   params: Promise<{ id: string }>
@@ -39,28 +31,14 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: 'Données invalides' }, { status: 400 })
   }
 
-  const now = new Date().toISOString()
-
-  let updatePayload: Record<string, unknown>
-  if (parsed.data.champ === 'cni') {
-    updatePayload = {
-      statut_cni: parsed.data.statut,
-      motif_rejet_cni: parsed.data.motif_rejet ?? null,
-      verifie_cni_par: user.id,
-      verifie_cni_le: now,
-    }
-  } else {
-    updatePayload = {
-      statut_permis: parsed.data.statut,
-      motif_rejet_permis: parsed.data.motif_rejet ?? null,
-      verifie_permis_par: user.id,
-      verifie_permis_le: now,
-    }
-  }
-
   const { error } = await supabase
-    .from('profils_transporteur')
-    .update(updatePayload)
+    .from('vehicules')
+    .update({
+      statut_carte_grise: parsed.data.statut_carte_grise,
+      motif_rejet_cg: parsed.data.motif_rejet_cg ?? null,
+      verifie_par: user.id,
+      verifie_le: new Date().toISOString(),
+    })
     .eq('id', id)
 
   if (error) {

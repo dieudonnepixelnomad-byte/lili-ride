@@ -1,8 +1,12 @@
 export type UserRole = 'user' | 'admin'
 
-export type StatutConducteur = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+export type StatutCni = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+
+export type StatutPermis = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
 
 export type StatutVerification = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
+
+export type StatutCarteGrise = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
 
 export type StatutTrajet = 'actif' | 'complet' | 'annulé'
 
@@ -36,15 +40,23 @@ export interface User {
   created_at: string
 }
 
-// Conductor-level profile (1-to-1 with user) — permis only
+// Conductor-level profile (1-to-1 with user) — CNI + permis
 export interface ProfilTransporteur {
   id: string
   user_id: string
+  // CNI
+  cni_recto_url?: string
+  cni_verso_url?: string
+  statut_cni: StatutCni
+  motif_rejet_cni?: string
+  verifie_cni_par?: string
+  verifie_cni_le?: string
+  // Permis de conduire (covoiturage + colis only)
   permis_url?: string
-  statut_conducteur: StatutConducteur
-  motif_rejet?: string
-  verifie_par?: string
-  verifie_le?: string
+  statut_permis: StatutPermis
+  motif_rejet_permis?: string
+  verifie_permis_par?: string
+  verifie_permis_le?: string
   created_at: string
 }
 
@@ -111,6 +123,12 @@ export interface Vehicule {
   disponible: boolean
   description?: string
   statut: StatutVehicule
+  // Carte grise verification
+  carte_grise_url?: string
+  statut_carte_grise: StatutCarteGrise
+  motif_rejet_cg?: string
+  verifie_par?: string
+  verifie_le?: string
   created_at: string
   users?: Pick<User, 'id' | 'nom' | 'telephone' | 'ville' | 'photo_url' | 'email'>
 }
