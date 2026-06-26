@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Vehicule } from '@/types'
-import UserProfileTrigger from './UserProfileTrigger'
+import Avatar from './Avatar'
 
 interface Props {
   vehicule: Vehicule
@@ -53,7 +53,11 @@ export default function VehiculeCard({ vehicule }: Props) {
 
         {vehicule.users && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-            <UserProfileTrigger user={vehicule.users} size="sm" showName />
+            <Avatar nom={vehicule.users.nom} photo_url={vehicule.users.photo_url} size="sm" />
+            <div>
+              <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{vehicule.users.nom}</div>
+              <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{vehicule.users.ville}</div>
+            </div>
           </div>
         )}
       </div>

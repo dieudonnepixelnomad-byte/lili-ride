@@ -132,6 +132,7 @@ export interface Database {
           heure_depart: string
           prix: number
           places_dispo: number | null
+          poids_dispo_kg: number | null
           types_colis: string[] | null
           description: string | null
           statut: 'actif' | 'complet' | 'annulé'
@@ -154,6 +155,7 @@ export interface Database {
           heure_depart: string
           prix: number
           places_dispo?: number | null
+          poids_dispo_kg?: number | null
           types_colis?: string[] | null
           description?: string | null
           statut?: 'actif' | 'complet' | 'annulé'
@@ -229,6 +231,7 @@ export interface Database {
           nb_places: number | null
           description_colis: string | null
           poids_estime: string | null
+          poids_kg: number | null
           date_debut: string | null
           date_fin: string | null
           message: string | null
@@ -249,6 +252,7 @@ export interface Database {
           nb_places?: number | null
           description_colis?: string | null
           poids_estime?: string | null
+          poids_kg?: number | null
           date_debut?: string | null
           date_fin?: string | null
           message?: string | null

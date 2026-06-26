@@ -20,7 +20,7 @@ export default async function ColisDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, poids_dispo_kg, users(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .eq('type', 'colis')
     .single()
@@ -121,7 +121,14 @@ export default async function ColisDetailPage({ params }: Props) {
           </div>
 
           <div className="detail-form">
-            <DemandeForm trajetId={t.id} type="colis" prix={t.prix} prixLabel="pour ce trajet" />
+            <DemandeForm
+              trajetId={t.id}
+              type="colis"
+              prix={t.prix}
+              prixLabel="pour ce trajet"
+              poidsDispoKg={t.poids_dispo_kg ?? null}
+              trajetStatut={t.statut}
+            />
           </div>
         </div>
       </div>

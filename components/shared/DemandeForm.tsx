@@ -11,11 +11,14 @@ interface Props {
   type: TypeDemande
   prix?: number
   prixLabel?: string
+  placesDisponibles?: number | null
+  poidsDispoKg?: number | null
+  trajetStatut?: string
 }
 
 type AuthCheck = 'loading' | 'no_auth' | 'no_photo' | 'ok'
 
-export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabel }: Props) {
+export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabel, placesDisponibles, poidsDispoKg, trajetStatut }: Props) {
   const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [authCheck, setAuthCheck] = useState<AuthCheck>('loading')
@@ -42,6 +45,7 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
     nb_places: '1',
     description_colis: '',
     poids_estime: '',
+    poids_kg: '',
     date_debut: '',
     date_fin: '',
     message: '',
@@ -72,6 +76,7 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
       if (type === 'colis') {
         body.description_colis = form.description_colis
         body.poids_estime = form.poids_estime || undefined
+        if (form.poids_kg) body.poids_kg = parseFloat(form.poids_kg)
       }
       if (type === 'location') {
         body.date_debut = form.date_debut
@@ -142,6 +147,32 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
     )
   }
 
+  const isComplet =
+    trajetStatut === 'complet' ||
+    (type === 'covoiturage' && placesDisponibles != null && placesDisponibles <= 0) ||
+    (type === 'colis' && poidsDispoKg != null && poidsDispoKg <= 0)
+
+  if (isComplet) {
+    return (
+      <div className="card card-pad" style={{ textAlign: 'center', padding: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {prix && (
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, color: 'var(--primary-deep)' }}>
+            {prix.toLocaleString('fr-FR')} FCFA
+          </div>
+        )}
+        <div style={{ fontSize: 32 }}>🔒</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)' }}>
+          {type === 'covoiturage' ? 'Trajet complet' : 'Capacité épuisée'}
+        </div>
+        <div style={{ fontSize: 14, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+          {type === 'covoiturage'
+            ? 'Toutes les places ont été réservées.'
+            : 'La capacité de transport est épuisée pour ce trajet.'}
+        </div>
+      </div>
+    )
+  }
+
   if (success) {
     return (
       <div className="card card-pad" style={{ textAlign: 'center', padding: 40 }}>
@@ -206,9 +237,21 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
               <label className="field-label">Description du colis</label>
               <textarea className="textarea" placeholder="Nature, dimensions approximatives…" value={form.description_colis} onChange={e => update('description_colis', e.target.value)} required />
             </div>
-            <div className="field">
-              <label className="field-label">Poids estimé <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-              <input className="input" type="text" placeholder="Ex: 2 kg" value={form.poids_estime} onChange={e => update('poids_estime', e.target.value)} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="field">
+                <label className="field-label">Poids (kg)</label>
+                <input className="input" type="number" placeholder="Ex: 5" min="0.1" step="0.1"
+                  value={form.poids_kg} onChange={e => update('poids_kg', e.target.value)} />
+                {poidsDispoKg != null && (
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>
+                    Capacité restante : {poidsDispoKg} kg
+                  </div>
+                )}
+              </div>
+              <div className="field">
+                <label className="field-label">Description du poids <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                <input className="input" type="text" placeholder="Ex: carton, fragile…" value={form.poids_estime} onChange={e => update('poids_estime', e.target.value)} />
+              </div>
             </div>
           </>
         )}

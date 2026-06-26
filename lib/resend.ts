@@ -4,7 +4,7 @@ import type { Demande, Trajet, Vehicule } from '@/types'
 export const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? 'admin@liliride.cm'
-export const FROM_EMAIL = 'Lili-Ride <notifications@liliride.cm>'
+export const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? 'Lili-Ride <onboarding@resend.dev>'
 
 interface NotifPayload {
   demandeId: string

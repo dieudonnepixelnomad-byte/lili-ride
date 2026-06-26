@@ -120,7 +120,13 @@ export default async function CovoiturageDetailPage({ params }: Props) {
 
           {/* Right — Demande form */}
           <div className="detail-form">
-            <DemandeForm trajetId={t.id} type="covoiturage" prix={t.prix} />
+            <DemandeForm
+              trajetId={t.id}
+              type="covoiturage"
+              prix={t.prix}
+              placesDisponibles={t.places_dispo ?? null}
+              trajetStatut={t.statut}
+            />
           </div>
         </div>
       </div>

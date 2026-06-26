@@ -13,6 +13,7 @@ const schema = z.object({
   nb_places: z.number().int().min(1).optional().nullable(),
   description_colis: z.string().optional().nullable(),
   poids_estime: z.string().optional().nullable(),
+  poids_kg: z.number().positive().optional().nullable(),
   date_debut: z.string().optional().nullable(),
   date_fin: z.string().optional().nullable(),
   message: z.string().optional().nullable(),
@@ -35,6 +36,42 @@ export async function POST(req: NextRequest) {
   const { data: userData } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
   if (!userData?.photo_url) {
     return NextResponse.json({ error: 'Ajoutez une photo de profil avant de faire une demande.' }, { status: 403 })
+  }
+
+  // Check trajet availability before inserting
+  if (parsed.data.trajet_id) {
+    const { data: trajet } = await supabase
+      .from('trajets')
+      .select('statut, places_dispo, poids_dispo_kg, type')
+      .eq('id', parsed.data.trajet_id)
+      .single()
+
+    if (!trajet) {
+      return NextResponse.json({ error: 'Annonce introuvable.' }, { status: 404 })
+    }
+    if (trajet.statut === 'annulé') {
+      return NextResponse.json({ error: 'Ce trajet a été annulé.' }, { status: 409 })
+    }
+    if (trajet.statut === 'complet') {
+      return NextResponse.json({ error: 'Ce trajet est complet.' }, { status: 409 })
+    }
+    if (trajet.type === 'covoiturage') {
+      const nb = parsed.data.nb_places ?? 1
+      if ((trajet.places_dispo ?? 0) < nb) {
+        return NextResponse.json(
+          { error: `Seulement ${trajet.places_dispo ?? 0} place(s) disponible(s) sur ce trajet.` },
+          { status: 409 }
+        )
+      }
+    }
+    if (trajet.type === 'colis' && parsed.data.poids_kg && trajet.poids_dispo_kg != null) {
+      if (trajet.poids_dispo_kg < parsed.data.poids_kg) {
+        return NextResponse.json(
+          { error: `Capacité insuffisante. Il reste ${trajet.poids_dispo_kg} kg disponibles.` },
+          { status: 409 }
+        )
+      }
+    }
   }
 
   const { data: demande, error } = await supabase

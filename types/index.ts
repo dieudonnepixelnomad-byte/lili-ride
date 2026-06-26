@@ -100,6 +100,7 @@ export interface Trajet {
   heure_depart: string
   prix: number
   places_dispo?: number
+  poids_dispo_kg?: number
   types_colis?: TypeColis[]
   description?: string
   statut: StatutTrajet
@@ -147,6 +148,7 @@ export interface Demande {
   nb_places?: number
   description_colis?: string
   poids_estime?: string
+  poids_kg?: number
   date_debut?: string
   date_fin?: string
   message?: string

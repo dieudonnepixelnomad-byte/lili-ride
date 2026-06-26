@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
 
   const { data: vehicule } = await supabase
     .from('vehicules_transporteur')
-    .select('statut_verification')
+    .select('statut_verification, capacite_kg')
     .eq('id', parsed.data.vehicule_transporteur_id)
     .eq('user_id', user.id)
     .single()
@@ -63,9 +63,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Véhicule non vérifié ou introuvable' }, { status: 403 })
   }
 
+  const extraFields = parsed.data.type === 'colis' && vehicule.capacite_kg
+    ? { poids_dispo_kg: vehicule.capacite_kg }
+    : {}
+
   const { data: trajet, error } = await supabase
     .from('trajets')
-    .insert({ ...parsed.data, user_id: user.id, statut: 'actif' })
+    .insert({ ...parsed.data, ...extraFields, user_id: user.id, statut: 'actif' })
     .select()
     .single()
 
