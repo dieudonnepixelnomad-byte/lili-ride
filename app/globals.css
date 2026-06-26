@@ -665,6 +665,7 @@ p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
   gap: 48px; align-items: center; border-radius: 24px;
   position: relative; overflow: hidden; color: #fff;
 }
+.cta-buttons { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
 
 @media (max-width: 960px) {
   .hero-section { padding: 40px 0 56px; }
@@ -676,7 +677,8 @@ p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
   .poles-grid { grid-template-columns: 1fr 1fr; }
   .steps-grid { grid-template-columns: 1fr 1fr; }
   .why-grid { grid-template-columns: 1fr; gap: 40px; }
-  .cta-band { grid-template-columns: 1fr; padding: 36px; gap: 28px; }
+  .cta-band { grid-template-columns: 1fr; padding: 36px; gap: 28px; text-align: center; }
+  .cta-buttons { justify-content: center; }
 }
 @media (max-width: 640px) {
   .hero-section { padding: 28px 0 40px; }

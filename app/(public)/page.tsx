@@ -107,7 +107,7 @@ export default function LandingPage() {
             <h2>La même plateforme<br />pour tous vos déplacements.</h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+          <div className="poles-grid">
             {[
               {
                 href: '/covoiturage',
@@ -212,7 +212,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32, marginTop: 48 }}>
+          <div className="steps-grid">
             {[
               { num: '01 — RECHERCHE', title: 'Choisissez votre service', desc: 'Covoiturage, transport de colis ou location. Indiquez votre départ, arrivée et date, parcourez les annonces disponibles.' },
               { num: '02 — DEMANDE', title: 'Envoyez une demande', desc: 'Sur la fiche qui vous intéresse, remplissez le formulaire en quelques secondes. Vos coordonnées sont pré-remplies.' },
@@ -232,7 +232,7 @@ export default function LandingPage() {
       {/* POURQUOI LILI-RIDE */}
       <section className="section">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, alignItems: 'center' }}>
+          <div className="why-grid">
             <div>
               <span className="kicker">Pourquoi Lili-Ride</span>
               <h2>Conçu pour la réalité du terrain camerounais.</h2>
@@ -321,20 +321,11 @@ export default function LandingPage() {
       {/* CTA BAND */}
       <section className="section-sm">
         <div className="container">
-          <div style={{
+          <div className="cta-band" style={{
             background: `
               radial-gradient(ellipse at top right, rgba(15, 138, 107, 0.15), transparent 50%),
               linear-gradient(135deg, #143E6E 0%, #1A4E8A 60%, #2563A8 100%)
             `,
-            color: '#fff',
-            borderRadius: 24,
-            padding: 64,
-            display: 'grid',
-            gridTemplateColumns: '1.5fr 1fr',
-            gap: 48,
-            alignItems: 'center',
-            position: 'relative',
-            overflow: 'hidden',
           }}>
             {/* Grid overlay */}
             <div style={{
@@ -348,7 +339,7 @@ export default function LandingPage() {
               <p style={{ color: 'rgba(255,255,255,0.85)', marginTop: 16, fontSize: 16 }}>
                 Publiez vos trajets covoiturage, vos disponibilités pour le transport de colis ou mettez votre véhicule à la location. La vérification est gratuite et prend 24h en moyenne.
               </p>
-              <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
+              <div className="cta-buttons">
                 <Link href="/connexion" className="btn btn-accent btn-lg">Devenir transporteur</Link>
                 <Link href="/support" className="btn btn-outline btn-lg" style={{ background: 'transparent', color: '#fff', borderColor: 'rgba(255,255,255,0.3)' }}>Parler à l&rsquo;équipe</Link>
               </div>
