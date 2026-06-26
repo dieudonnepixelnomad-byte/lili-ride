@@ -27,6 +27,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
   }
 
+  const { data: userData } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
+  if (!userData?.photo_url) {
+    return NextResponse.json({ error: 'Ajoutez une photo de profil avant de publier.' }, { status: 403 })
+  }
+
   // Location requires CNI verified (no permis needed)
   const { data: profil } = await supabase
     .from('profils_transporteur')

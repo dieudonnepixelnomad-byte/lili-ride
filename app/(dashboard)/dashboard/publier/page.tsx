@@ -18,6 +18,7 @@ type VerifStatus =
   | 'idle'
   | 'checking'
   | 'ok'
+  | 'photo_manquante'
   | 'cni_non_soumis'
   | 'cni_en_attente'
   | 'cni_rejeté'
@@ -66,6 +67,10 @@ export default function PublierPage() {
   // Covoiturage
   const [placesDispo, setPlacesDispo] = useState('3')
 
+  // Points précis ramassage / dépôt (covoiturage + colis)
+  const [lieuRamassage, setLieuRamassage] = useState('')
+  const [lieuDepot, setLieuDepot] = useState('')
+
   // Colis
   const [typesColis, setTypesColis] = useState<string[]>([])
 
@@ -88,6 +93,9 @@ export default function PublierPage() {
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setVerifStatus('cni_non_soumis'); return }
+
+    const { data: userData } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
+    if (!userData?.photo_url) { setVerifStatus('photo_manquante'); return }
 
     const { data: profil } = await supabase
       .from('profils_transporteur')
@@ -228,6 +236,8 @@ export default function PublierPage() {
           prix: parseFloat(prix),
           places_dispo: serviceType === 'covoiturage' ? parseInt(placesDispo) : undefined,
           types_colis: serviceType === 'colis' ? typesColis : undefined,
+          lieu_ramassage: lieuRamassage || undefined,
+          lieu_depot: lieuDepot || undefined,
           description,
         }
       }
@@ -300,6 +310,12 @@ export default function PublierPage() {
     const configs: Record<Exclude<VerifStatus, 'idle' | 'checking' | 'ok'>, {
       icon: string; title: string; text: string; motif?: string; cta: { label: string; href: string } | null
     }> = {
+      photo_manquante: {
+        icon: '📷',
+        title: 'Photo de profil manquante',
+        text: 'Une photo de profil est requise pour publier une annonce. Ajoutez-en une dans votre profil.',
+        cta: { label: 'Compléter mon profil', href: '/dashboard/profil' },
+      },
       cni_non_soumis: {
         icon: '📋',
         title: 'Carte Nationale d\'Identité manquante',
@@ -465,6 +481,21 @@ export default function PublierPage() {
                   </div>
                 )}
               </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="field">
+                  <label className="field-label">Point de ramassage <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                  <input className="input" type="text" value={lieuRamassage} onChange={e => setLieuRamassage(e.target.value)}
+                    placeholder="Ex: Carrefour Akwa, face BICEC" />
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Lieu précis où vous prenez les passagers / colis</div>
+                </div>
+                <div className="field">
+                  <label className="field-label">Point de dépose <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                  <input className="input" type="text" value={lieuDepot} onChange={e => setLieuDepot(e.target.value)}
+                    placeholder="Ex: Gare routière de Messa" />
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Lieu précis où vous déposez les passagers / colis</div>
+                </div>
+              </div>
+
               {serviceType === 'colis' && (
                 <div className="field">
                   <label className="field-label">Types de colis acceptés</label>

@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import type { TypeDemande } from '@/types'
 
 interface Props {
@@ -11,7 +13,28 @@ interface Props {
   prixLabel?: string
 }
 
+type AuthCheck = 'loading' | 'no_auth' | 'no_photo' | 'ok'
+
 export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabel }: Props) {
+  const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
+  const [authCheck, setAuthCheck] = useState<AuthCheck>('loading')
+
+  useEffect(() => {
+    async function check() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { setAuthCheck('no_auth'); return }
+        const { data } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
+        setAuthCheck(data?.photo_url ? 'ok' : 'no_photo')
+      } catch {
+        // En cas d'erreur réseau on laisse accéder — l'API bloquera côté serveur
+        setAuthCheck('ok')
+      }
+    }
+    check()
+  }, [supabase])
+
   const [form, setForm] = useState({
     nom: '',
     telephone: '',
@@ -71,6 +94,52 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
     } finally {
       setLoading(false)
     }
+  }
+
+  if (authCheck === 'loading') {
+    return (
+      <div className="card card-pad" style={{ textAlign: 'center', padding: 40 }}>
+        <div style={{ color: 'var(--ink-3)', fontSize: 14 }}>Vérification…</div>
+      </div>
+    )
+  }
+
+  if (authCheck === 'no_auth') {
+    return (
+      <div className="card card-pad" style={{ textAlign: 'center', padding: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {prix && (
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, color: 'var(--primary-deep)' }}>
+            {prix.toLocaleString('fr-FR')} FCFA
+          </div>
+        )}
+        <div style={{ fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+          Connectez-vous pour réserver.
+        </div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary btn-lg" onClick={() => router.push('/connexion')}>Se connecter</button>
+          <button type="button" className="btn btn-outline btn-lg" onClick={() => router.push('/inscription')}>Créer un compte</button>
+        </div>
+      </div>
+    )
+  }
+
+  if (authCheck === 'no_photo') {
+    return (
+      <div className="card card-pad" style={{ textAlign: 'center', padding: 32, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {prix && (
+          <div style={{ fontFamily: 'var(--font-serif)', fontSize: 28, color: 'var(--primary-deep)' }}>
+            {prix.toLocaleString('fr-FR')} FCFA
+          </div>
+        )}
+        <div style={{ fontSize: 24 }}>📷</div>
+        <div style={{ fontSize: 15, color: 'var(--ink-2)', lineHeight: 1.6 }}>
+          Ajoutez une photo de profil pour réserver.
+        </div>
+        <button type="button" className="btn btn-primary btn-lg" onClick={() => router.push('/dashboard/profil')}>
+          Compléter mon profil
+        </button>
+      </div>
+    )
   }
 
   if (success) {

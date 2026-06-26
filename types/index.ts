@@ -94,6 +94,8 @@ export interface Trajet {
   arrivee_label: string
   arrivee_lat?: number
   arrivee_lng?: number
+  lieu_ramassage?: string
+  lieu_depot?: string
   date_depart: string
   heure_depart: string
   prix: number

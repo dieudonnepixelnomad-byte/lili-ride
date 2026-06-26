@@ -28,6 +28,15 @@ export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Toute demande nécessite un compte avec photo de profil
+  if (!user) {
+    return NextResponse.json({ error: 'Connectez-vous pour faire une demande.' }, { status: 401 })
+  }
+  const { data: userData } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
+  if (!userData?.photo_url) {
+    return NextResponse.json({ error: 'Ajoutez une photo de profil avant de faire une demande.' }, { status: 403 })
+  }
+
   const { data: demande, error } = await supabase
     .from('demandes')
     .insert({

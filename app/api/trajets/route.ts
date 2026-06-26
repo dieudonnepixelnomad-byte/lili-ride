@@ -17,6 +17,8 @@ const schema = z.object({
   places_dispo: z.number().int().min(1).optional().nullable(),
   types_colis: z.array(z.string()).optional().nullable(),
   description: z.string().optional().nullable(),
+  lieu_ramassage: z.string().optional().nullable(),
+  lieu_depot: z.string().optional().nullable(),
 })
 
 export async function POST(req: NextRequest) {
@@ -31,6 +33,11 @@ export async function POST(req: NextRequest) {
     .select('statut_cni, statut_permis')
     .eq('user_id', user.id)
     .single()
+
+  const { data: userData } = await supabase.from('users').select('photo_url').eq('id', user.id).single()
+  if (!userData?.photo_url) {
+    return NextResponse.json({ error: 'Ajoutez une photo de profil avant de publier.' }, { status: 403 })
+  }
 
   if (!profil || profil.statut_cni !== 'vérifié') {
     return NextResponse.json({ error: 'CNI non vérifiée' }, { status: 403 })

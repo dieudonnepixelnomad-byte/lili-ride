@@ -71,6 +71,7 @@ export default function LandingPage() {
                 src="/images/voiture_accueil.png"
                 alt="Voiture sur route camerounaise"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 style={{ objectFit: 'cover' }}
                 priority
               />

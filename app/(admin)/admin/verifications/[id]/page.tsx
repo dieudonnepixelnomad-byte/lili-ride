@@ -66,7 +66,7 @@ export default async function AdminVerificationProfilPage({ params }: Props) {
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {u && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-              <Avatar nom={u.nom} size="md" />
+              <Avatar nom={u.nom} photo_url={u.photo_url} size="md" />
               <div>
                 <div style={{ fontWeight: 600, fontSize: 16 }}>{u.nom}</div>
                 <div style={{ fontSize: 13, color: 'var(--ink-3)' }}>{u.ville}</div>

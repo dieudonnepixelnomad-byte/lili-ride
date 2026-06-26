@@ -126,6 +126,8 @@ export interface Database {
           arrivee_label: string
           arrivee_lat: number | null
           arrivee_lng: number | null
+          lieu_ramassage: string | null
+          lieu_depot: string | null
           date_depart: string
           heure_depart: string
           prix: number
@@ -146,6 +148,8 @@ export interface Database {
           arrivee_label: string
           arrivee_lat?: number | null
           arrivee_lng?: number | null
+          lieu_ramassage?: string | null
+          lieu_depot?: string | null
           date_depart: string
           heure_depart: string
           prix: number

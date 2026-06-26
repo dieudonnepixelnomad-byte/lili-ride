@@ -67,6 +67,12 @@ export default function ProfilPage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // Photo de profil
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoSaving, setPhotoSaving] = useState(false)
+  const [photoError, setPhotoError] = useState('')
+  const photoRef = useRef<HTMLInputElement>(null)
+
   // Profil transporteur
   const [profil, setProfil] = useState<ProfilTransporteur | null>(null)
 
@@ -128,6 +134,30 @@ export default function ProfilPage() {
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  // ── Photo de profil ────────────────────────────────────────────────────────
+  async function savePhoto() {
+    if (!photoFile) return
+    setPhotoError('')
+    setPhotoSaving(true)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) throw new Error('Non authentifié')
+      const ext = photoFile.name.split('.').pop() ?? 'jpg'
+      const path = `${authUser.id}/avatar-${Date.now()}.${ext}`
+      const { error: uploadErr } = await supabase.storage.from('avatars').upload(path, photoFile, { upsert: true })
+      if (uploadErr) throw new Error(`Upload photo échoué : ${uploadErr.message}`)
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      await supabase.from('users').update({ photo_url: publicUrl }).eq('id', authUser.id)
+      setUser(u => u ? { ...u, photo_url: publicUrl } : u)
+      setPhotoFile(null)
+      if (photoRef.current) photoRef.current.value = ''
+    } catch (err: unknown) {
+      setPhotoError(err instanceof Error ? err.message : 'Erreur lors de la sauvegarde.')
+    } finally {
+      setPhotoSaving(false)
+    }
   }
 
   // ── CNI ────────────────────────────────────────────────────────────────────
@@ -421,7 +451,40 @@ export default function ProfilPage() {
 
       {/* ── Onglet Profil ── */}
       {activeTab === 'profil' && (
-        <form onSubmit={saveProfile} style={{ maxWidth: 560 }}>
+        <div style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* Photo de profil */}
+          <div className="card card-pad">
+            <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>Photo de profil</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 16 }}>Requise pour réserver un covoiturage ou un transport de colis.</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <Avatar nom={user.nom} photo_url={user.photo_url} size="xl" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {user.photo_url ? (
+                  <span style={{ fontSize: 13, color: 'var(--success)' }}>✓ Photo enregistrée</span>
+                ) : (
+                  <span style={{ fontSize: 13, color: 'var(--danger)' }}>Aucune photo — ajoutez-en une pour réserver</span>
+                )}
+                {photoFile && (
+                  <span style={{ fontSize: 13, color: 'var(--warning)' }}>En attente de sauvegarde : {photoFile.name}</span>
+                )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => setPhotoFile(e.target.files?.[0] ?? null)} />
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => photoRef.current?.click()}>
+                    {user.photo_url ? 'Remplacer' : 'Ajouter une photo'}
+                  </button>
+                  {photoFile && (
+                    <button type="button" className="btn btn-primary btn-sm" onClick={savePhoto} disabled={photoSaving}>
+                      {photoSaving ? 'Sauvegarde…' : 'Enregistrer'}
+                    </button>
+                  )}
+                </div>
+                {photoError && <div className="notice warn" style={{ fontSize: 13, padding: '8px 12px' }}>{photoError}</div>}
+              </div>
+            </div>
+          </div>
+
+        <form onSubmit={saveProfile}>
           <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div className="field">
               <label className="field-label">Nom complet</label>
@@ -453,6 +516,7 @@ export default function ProfilPage() {
             </div>
           </div>
         </form>
+        </div>
       )}
 
       {/* ── Onglet Transporteur ── */}

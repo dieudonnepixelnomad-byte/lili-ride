@@ -74,6 +74,24 @@ export default async function ColisDetailPage({ params }: Props) {
               </div>
             )}
 
+            {/* Points précis */}
+            {(t.lieu_ramassage || t.lieu_depot) && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
+                {t.lieu_ramassage && (
+                  <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de ramassage</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_ramassage}</div>
+                  </div>
+                )}
+                {t.lieu_depot && (
+                  <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de dépose</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_depot}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Carte du trajet */}
             <div style={{ marginTop: 32 }}>
               <TrajetMapWrapper
