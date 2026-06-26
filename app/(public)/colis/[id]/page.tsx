@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import Avatar from '@/components/shared/Avatar'
+import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
 import DemandeForm from '@/components/shared/DemandeForm'
 import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
 import type { Trajet } from '@/types'
@@ -37,7 +37,7 @@ export default async function ColisDetailPage({ params }: Props) {
           <span>{t.depart_label} → {t.arrivee_label}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 40, alignItems: 'start' }}>
+        <div className="detail-layout">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
               <span className="badge badge-accent badge-dot">Actif</span>
@@ -76,7 +76,7 @@ export default async function ColisDetailPage({ params }: Props) {
 
             {/* Points précis */}
             {(t.lieu_ramassage || t.lieu_depot) && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 24 }}>
+              <div className="pickup-grid">
                 {t.lieu_ramassage && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
                     <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de ramassage</div>
@@ -115,19 +115,12 @@ export default async function ColisDetailPage({ params }: Props) {
             {t.users && (
               <div className="card card-pad" style={{ marginTop: 32 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Transporteur</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <Avatar nom={t.users.nom} size="lg" />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--ink)' }}>{t.users.nom}</div>
-                    <div style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 2 }}>{t.users.ville}</div>
-                    <span className="badge badge-accent" style={{ marginTop: 8 }}>Transporteur vérifié</span>
-                  </div>
-                </div>
+                <UserProfileTrigger user={t.users} size="lg" showName />
               </div>
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 90 }}>
+          <div className="detail-form">
             <DemandeForm trajetId={t.id} type="colis" prix={t.prix} prixLabel="pour ce trajet" />
           </div>
         </div>

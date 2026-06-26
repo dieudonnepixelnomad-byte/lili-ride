@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import Avatar from '@/components/shared/Avatar'
+import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
 import DemandeForm from '@/components/shared/DemandeForm'
 import type { Vehicule } from '@/types'
 
@@ -31,7 +31,7 @@ export default async function LocationDetailPage({ params }: Props) {
           <span>{v.marque} {v.modele}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 40, alignItems: 'start' }}>
+        <div className="detail-layout">
           <div>
             <h1 style={{ fontSize: 'clamp(28px, 3.5vw, 40px)' }}>
               {v.marque} {v.modele}
@@ -82,18 +82,12 @@ export default async function LocationDetailPage({ params }: Props) {
             {v.users && (
               <div className="card card-pad" style={{ marginTop: 32 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Propriétaire</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <Avatar nom={v.users.nom} size="lg" />
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--ink)' }}>{v.users.nom}</div>
-                    <div style={{ fontSize: 13.5, color: 'var(--ink-3)', marginTop: 2 }}>{v.users.ville}</div>
-                  </div>
-                </div>
+                <UserProfileTrigger user={v.users} size="lg" showName />
               </div>
             )}
           </div>
 
-          <div style={{ position: 'sticky', top: 90 }}>
+          <div className="detail-form">
             <DemandeForm vehiculeId={v.id} type="location" prix={v.prix_jour} prixLabel="par jour" />
           </div>
         </div>

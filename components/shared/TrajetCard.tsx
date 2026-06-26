@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import type { Trajet } from '@/types'
-import Avatar from './Avatar'
+import UserProfileTrigger from './UserProfileTrigger'
 
 interface Props {
   trajet: Trajet
@@ -67,11 +67,7 @@ export default function TrajetCard({ trajet }: Props) {
         {/* Conducteur */}
         {trajet.users && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
-            <Avatar nom={trajet.users.nom} size="sm" />
-            <div>
-              <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{trajet.users.nom}</div>
-              <div style={{ fontSize: 12, color: 'var(--ink-3)' }}>{trajet.users.ville}</div>
-            </div>
+            <UserProfileTrigger user={trajet.users} size="sm" showName />
           </div>
         )}
       </div>

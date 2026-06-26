@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import type { Vehicule } from '@/types'
+import UserProfileTrigger from './UserProfileTrigger'
 
 interface Props {
   vehicule: Vehicule
@@ -49,6 +50,12 @@ export default function VehiculeCard({ vehicule }: Props) {
           {vehicule.boite && <span className="badge">{vehicule.boite}</span>}
           {vehicule.annee && <span className="badge">{vehicule.annee}</span>}
         </div>
+
+        {vehicule.users && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, borderTop: '1px solid var(--line)', paddingTop: 14 }}>
+            <UserProfileTrigger user={vehicule.users} size="sm" showName />
+          </div>
+        )}
       </div>
     </Link>
   )

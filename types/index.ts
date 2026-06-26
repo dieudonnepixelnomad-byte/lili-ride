@@ -104,7 +104,7 @@ export interface Trajet {
   description?: string
   statut: StatutTrajet
   created_at: string
-  users?: Pick<User, 'id' | 'nom' | 'telephone' | 'ville' | 'photo_url' | 'email'>
+  users?: Pick<User, 'id' | 'nom' | 'telephone' | 'whatsapp' | 'ville' | 'photo_url' | 'email'>
 }
 
 export interface Vehicule {
@@ -132,7 +132,7 @@ export interface Vehicule {
   verifie_par?: string
   verifie_le?: string
   created_at: string
-  users?: Pick<User, 'id' | 'nom' | 'telephone' | 'ville' | 'photo_url' | 'email'>
+  users?: Pick<User, 'id' | 'nom' | 'telephone' | 'whatsapp' | 'ville' | 'photo_url' | 'email'>
 }
 
 export interface Demande {

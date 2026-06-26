@@ -688,6 +688,22 @@ p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
   .hero-stats { gap: 16px; }
 }
 
+/* ---------- Detail pages ---------- */
+.detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 40px;
+  align-items: start;
+}
+.detail-form { position: sticky; top: 90px; }
+.pickup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+
+@media (max-width: 960px) {
+  .detail-layout { grid-template-columns: 1fr; }
+  .detail-form { position: static; }
+  .pickup-grid { grid-template-columns: 1fr; }
+}
+
 /* ---------- List pages ---------- */
 .list-layout {
   display: grid;
