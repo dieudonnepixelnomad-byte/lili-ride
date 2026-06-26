@@ -15,8 +15,8 @@ export default function LandingPage() {
         `,
       }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 1fr', gap: 64, alignItems: 'center' }}>
-            <div>
+          <div className="hero-grid">
+            <div className="hero-content">
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 10,
                 padding: '6px 12px 6px 6px',
@@ -38,12 +38,12 @@ export default function LandingPage() {
                 Covoiturage entre particuliers, transport de vos colis et location de véhicules. Trois services, une seule plateforme, des prix en FCFA, un support humain joignable au téléphone et sur WhatsApp.
               </p>
 
-              <div style={{ display: 'flex', gap: 12, marginTop: 36, flexWrap: 'wrap' }}>
+              <div className="hero-buttons">
                 <Link href="/covoiturage" className="btn btn-primary btn-lg">Trouver un trajet</Link>
                 <Link href="/connexion" className="btn btn-outline btn-lg">Publier mon trajet</Link>
               </div>
 
-              <div style={{ display: 'flex', gap: 32, marginTop: 56 }}>
+              <div className="hero-stats">
                 {[
                   { v: '3', l: 'villes pilotes' },
                   { v: '100%', l: 'francophone' },
@@ -58,15 +58,7 @@ export default function LandingPage() {
             </div>
 
             {/* Hero visual */}
-            <div style={{
-              position: 'relative',
-              aspectRatio: '4/5',
-              background: 'var(--surface)',
-              border: '1px solid var(--line)',
-              borderRadius: 28,
-              overflow: 'hidden',
-              boxShadow: 'var(--shadow-lg)',
-            }}>
+            <div className="hero-visual max-[960px]:!hidden">
               <Image
                 src="/images/voiture_accueil.png"
                 alt="Voiture sur route camerounaise"

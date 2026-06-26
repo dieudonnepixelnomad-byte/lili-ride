@@ -107,7 +107,7 @@ export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart 
       zIndex: 5,
     }}>
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 14, padding: 4, background: 'var(--surface-2)', borderRadius: 12, width: 'fit-content' }}>
+      <div className="search-tabs">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -135,15 +135,7 @@ export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart 
       {/* Form */}
       <form
         onSubmit={handleSearch}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: activeTab === 'location' ? '1.5fr 1fr auto' : '1.2fr 1.2fr 1fr 0.8fr auto',
-          gap: 1,
-          background: 'var(--line)',
-          border: '1px solid var(--line)',
-          borderRadius: 14,
-          overflow: 'hidden',
-        }}
+        className={`search-form${activeTab === 'location' ? ' location' : ''}`}
       >
         <div style={{ background: 'var(--surface)', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <label style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>
@@ -194,16 +186,7 @@ export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart 
           </div>
         )}
 
-        <button
-          type="submit"
-          style={{
-            background: 'var(--primary)',
-            color: '#fff', border: 'none', padding: '0 28px',
-            fontFamily: 'inherit', fontSize: 14.5, fontWeight: 500,
-            cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
+        <button type="submit" className="search-form-submit">
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
             <circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.6" />
             <path d="M13 13l3.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

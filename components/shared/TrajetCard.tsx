@@ -28,6 +28,22 @@ export default function TrajetCard({ trajet }: Props) {
                 ` · ${trajet.places_dispo} place${trajet.places_dispo > 1 ? 's' : ''} disponible${trajet.places_dispo > 1 ? 's' : ''}`
               }
             </div>
+            {(trajet.lieu_ramassage || trajet.lieu_depot) && (
+              <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                {trajet.lieu_ramassage && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-3)', whiteSpace: 'nowrap', paddingTop: 1 }}>Ramassage :</span>
+                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{trajet.lieu_ramassage}</span>
+                  </div>
+                )}
+                {trajet.lieu_depot && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--ink-3)', whiteSpace: 'nowrap', paddingTop: 1 }}>Dépose :</span>
+                    <span style={{ fontSize: 12.5, color: 'var(--ink-2)' }}>{trajet.lieu_depot}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-serif)', fontSize: 20, color: 'var(--primary-deep)' }}>

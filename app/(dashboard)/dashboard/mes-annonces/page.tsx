@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
+import AnnonceActions from '@/components/shared/AnnonceActions'
 import type { Trajet, Vehicule } from '@/types'
 
 function formatDate(date: string) {
@@ -44,6 +45,7 @@ export default async function MesAnnoncesPage() {
                   <th>Date</th>
                   <th>Prix</th>
                   <th>Statut</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -56,6 +58,7 @@ export default async function MesAnnoncesPage() {
                     <td style={{ fontSize: 13.5 }}>{formatDate(t.date_depart)}</td>
                     <td style={{ fontFamily: 'var(--font-serif)', fontSize: 15, color: 'var(--primary-deep)' }}>{t.prix.toLocaleString('fr-FR')} FCFA</td>
                     <td><StatusBadge statut={t.statut} /></td>
+                    <td><AnnonceActions type="trajet" id={t.id} label={`${t.depart_label} → ${t.arrivee_label}`} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -81,6 +84,7 @@ export default async function MesAnnoncesPage() {
                   <th>Prix / jour</th>
                   <th>Disponible</th>
                   <th>Statut</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -98,6 +102,7 @@ export default async function MesAnnoncesPage() {
                       </span>
                     </td>
                     <td><StatusBadge statut={v.statut} /></td>
+                    <td><AnnonceActions type="vehicule" id={v.id} label={`${v.marque} ${v.modele}`} /></td>
                   </tr>
                 ))}
               </tbody>
