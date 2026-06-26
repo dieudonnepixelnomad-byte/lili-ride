@@ -44,10 +44,10 @@ export default async function CovoituragePage({ searchParams }: Props) {
 
       <div className="section-sm">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32 }}>
+          <div className="list-layout">
             {/* Filters sidebar */}
             <aside>
-              <div className="card card-pad" style={{ position: 'sticky', top: 90 }}>
+              <div className="card card-pad list-sidebar">
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Filtres</div>
                 <div className="field">
                   <label className="field-label">Nombre de places</label>

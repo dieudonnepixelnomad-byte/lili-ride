@@ -44,9 +44,9 @@ export default async function ColisPage({ searchParams }: Props) {
 
       <div className="section-sm">
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 32 }}>
+          <div className="list-layout">
             <aside>
-              <div className="card card-pad" style={{ position: 'sticky', top: 90 }}>
+              <div className="card card-pad list-sidebar">
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Filtres</div>
                 <div className="field">
                   <label className="field-label">Type de colis accepté</label>

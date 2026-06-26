@@ -688,6 +688,19 @@ p { margin: 0; color: var(--ink-2); text-wrap: pretty; }
   .hero-stats { gap: 16px; }
 }
 
+/* ---------- List pages ---------- */
+.list-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 32px;
+}
+.list-sidebar { position: sticky; top: 90px; }
+
+@media (max-width: 960px) {
+  .list-layout { grid-template-columns: 1fr; }
+  .list-sidebar { position: static; }
+}
+
 /* ---------- Search panel ---------- */
 .search-tabs {
   display: flex;
