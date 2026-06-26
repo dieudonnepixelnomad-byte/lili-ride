@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState } from 'react'
 import type { User } from '@/types'
 
 interface Props {
@@ -69,6 +70,7 @@ function getInitials(nom: string) {
 
 export default function DashboardSidebar({ user }: Props) {
   const pathname = usePathname()
+  const [profilTooltip, setProfilTooltip] = useState(false)
 
   return (
     <aside className="sidebar">
@@ -81,11 +83,50 @@ export default function DashboardSidebar({ user }: Props) {
         <span className="group-label">Navigation</span>
         {navItems.map(({ href, label, icon, exact }) => {
           const isActive = exact ? pathname === href : pathname.startsWith(href)
+          const isProfilLink = href === '/dashboard/profil'
+          const missingPhoto = isProfilLink && !user.photo_url
           return (
-            <Link key={href} href={href} className={isActive ? 'active' : ''}>
-              {icon}
-              {label}
-            </Link>
+            <div key={href} style={{ position: 'relative' }}
+              onMouseEnter={() => missingPhoto && setProfilTooltip(true)}
+              onMouseLeave={() => setProfilTooltip(false)}
+            >
+              <Link href={href} className={isActive ? 'active' : ''}>
+                {icon}
+                {label}
+                {missingPhoto && (
+                  <span style={{
+                    marginLeft: 'auto',
+                    width: 8, height: 8,
+                    borderRadius: '50%',
+                    background: 'var(--danger)',
+                    flexShrink: 0,
+                    display: 'inline-block',
+                  }} />
+                )}
+              </Link>
+              {missingPhoto && profilTooltip && (
+                <div style={{
+                  position: 'absolute',
+                  left: '100%',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  marginLeft: 12,
+                  background: 'var(--ink)',
+                  color: '#fff',
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  whiteSpace: 'nowrap',
+                  zIndex: 100,
+                  pointerEvents: 'none',
+                  boxShadow: 'var(--shadow-md)',
+                }}>
+                  Photo de profil manquante<br />
+                  <span style={{ opacity: 0.7, fontSize: 11.5 }}>Requise pour réserver ou publier</span>
+                </div>
+              )}
+            </div>
           )
         })}
       </nav>
