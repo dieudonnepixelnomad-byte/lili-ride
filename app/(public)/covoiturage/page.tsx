@@ -14,7 +14,7 @@ export default async function CovoituragePage({ searchParams }: Props) {
 
   let query = supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, ville, photo_url)')
+    .select('*, users(id, nom, telephone, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule)')
     .eq('type', 'covoiturage')
     .eq('statut', 'actif')
     .order('date_depart', { ascending: true })

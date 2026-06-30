@@ -30,8 +30,8 @@ export default function ModifierTrajetForm({ trajet }: Props) {
   const [prix, setPrix] = useState(String(trajet.prix))
   const [placesDispo, setPlacesDispo] = useState(String(trajet.places_dispo ?? 3))
   const [typesColis, setTypesColis] = useState<string[]>(trajet.types_colis ?? [])
-  const [lieuRamassage, setLieuRamassage] = useState(trajet.lieu_ramassage ?? '')
-  const [lieuDepot, setLieuDepot] = useState(trajet.lieu_depot ?? '')
+  const [lieuEmbarquement, setLieuEmbarquement] = useState(trajet.lieu_embarquement ?? '')
+  const [lieuDebarquement, setLieuDebarquement] = useState(trajet.lieu_debarquement ?? '')
   const [description, setDescription] = useState(trajet.description ?? '')
   const [statut, setStatut] = useState(trajet.statut)
 
@@ -55,8 +55,8 @@ export default function ModifierTrajetForm({ trajet }: Props) {
         date_depart: dateDepart,
         heure_depart: heureDepart,
         prix: parseFloat(prix),
-        lieu_ramassage: lieuRamassage || null,
-        lieu_depot: lieuDepot || null,
+        lieu_embarquement: lieuEmbarquement || null,
+        lieu_debarquement: lieuDebarquement || null,
         description: description || null,
         statut,
       }
@@ -86,7 +86,7 @@ export default function ModifierTrajetForm({ trajet }: Props) {
     }
   }
 
-  const typeLabel = trajet.type === 'covoiturage' ? 'Covoiturage' : 'Transport de colis'
+  const typeLabel = trajet.type === 'covoiturage' ? 'Covoiturage' : 'Transport de colis (par avion)'
 
   return (
     <>
@@ -155,12 +155,12 @@ export default function ModifierTrajetForm({ trajet }: Props) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="field">
-              <label className="field-label">Point de ramassage <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-              <input className="input" type="text" value={lieuRamassage} onChange={e => setLieuRamassage(e.target.value)} placeholder="Ex: Carrefour Akwa, face BICEC" />
+              <label className="field-label">Lieu d'embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+              <input className="input" type="text" value={lieuEmbarquement} onChange={e => setLieuEmbarquement(e.target.value)} placeholder="Ex: Carrefour Akwa, face BICEC" />
             </div>
             <div className="field">
-              <label className="field-label">Point de dépose <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-              <input className="input" type="text" value={lieuDepot} onChange={e => setLieuDepot(e.target.value)} placeholder="Ex: Gare routière de Messa" />
+              <label className="field-label">Lieu de débarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+              <input className="input" type="text" value={lieuDebarquement} onChange={e => setLieuDebarquement(e.target.value)} placeholder="Ex: Gare routière de Messa" />
             </div>
           </div>
 

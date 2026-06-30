@@ -11,14 +11,14 @@ export default function Footer() {
               <span><b>Lili</b><em>-Ride</em></span>
             </Link>
             <p style={{ marginTop: 16, maxWidth: 320, fontSize: '13.5px', color: 'var(--ink-3)' }}>
-              La plateforme de mobilité camerounaise. Covoiturage, transport de colis et location de véhicules, en français, pour le Cameroun.
+              La plateforme de mobilité camerounaise. Covoiturage, transport de colis par avion et location de véhicules, en français, pour le Cameroun.
             </p>
           </div>
 
           <div className="footer-col">
             <h5>Services</h5>
             <Link href="/covoiturage">Covoiturage</Link>
-            <Link href="/colis">Transport de colis</Link>
+            <Link href="/colis">Transport de colis (avion)</Link>
             <Link href="/location">Location de véhicules</Link>
             <Link href="/connexion">Devenir transporteur</Link>
           </div>

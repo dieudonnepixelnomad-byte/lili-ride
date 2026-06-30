@@ -94,18 +94,21 @@ export interface Trajet {
   arrivee_label: string
   arrivee_lat?: number
   arrivee_lng?: number
-  lieu_ramassage?: string
-  lieu_depot?: string
+  lieu_embarquement?: string
+  lieu_debarquement?: string
   date_depart: string
   heure_depart: string
   prix: number
   places_dispo?: number
+  poids_max_kg?: number
   poids_dispo_kg?: number
+  prix_par_kg?: number
   types_colis?: TypeColis[]
   description?: string
   statut: StatutTrajet
   created_at: string
   users?: Pick<User, 'id' | 'nom' | 'telephone' | 'whatsapp' | 'ville' | 'photo_url' | 'email'>
+  vehicules_transporteur?: Pick<VehiculeTransporteur, 'id' | 'nb_places' | 'photo_vehicule_url' | 'marque' | 'modele' | 'type_vehicule'>
 }
 
 export interface Vehicule {

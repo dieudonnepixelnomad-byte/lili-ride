@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
 const schema = z.object({
-  vehicule_transporteur_id: z.string().uuid(),
+  vehicule_transporteur_id: z.string().uuid().optional().nullable(),
   type: z.enum(['covoiturage', 'colis']),
   depart_label: z.string().min(2),
   depart_lat: z.number().optional().nullable(),
@@ -16,9 +16,11 @@ const schema = z.object({
   prix: z.number().positive(),
   places_dispo: z.number().int().min(1).optional().nullable(),
   types_colis: z.array(z.string()).optional().nullable(),
+  poids_max_kg: z.number().positive().optional().nullable(),
+  prix_par_kg: z.number().positive().optional().nullable(),
   description: z.string().optional().nullable(),
-  lieu_ramassage: z.string().optional().nullable(),
-  lieu_depot: z.string().optional().nullable(),
+  lieu_embarquement: z.string().optional().nullable(),
+  lieu_debarquement: z.string().optional().nullable(),
 })
 
 export async function POST(req: NextRequest) {
@@ -42,9 +44,6 @@ export async function POST(req: NextRequest) {
   if (!profil || profil.statut_cni !== 'vérifié') {
     return NextResponse.json({ error: 'CNI non vérifiée' }, { status: 403 })
   }
-  if (profil.statut_permis !== 'vérifié') {
-    return NextResponse.json({ error: 'Permis de conduire non vérifié' }, { status: 403 })
-  }
 
   const body = await req.json()
   const parsed = schema.safeParse(body)
@@ -52,20 +51,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Données invalides', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  const { data: vehicule } = await supabase
-    .from('vehicules_transporteur')
-    .select('statut_verification, capacite_kg')
-    .eq('id', parsed.data.vehicule_transporteur_id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!vehicule || vehicule.statut_verification !== 'vérifié') {
-    return NextResponse.json({ error: 'Véhicule non vérifié ou introuvable' }, { status: 403 })
+  // Covoiturage : permis + véhicule vérifié requis. Colis (par avion) : CNI seule suffit.
+  const extraFields: Record<string, unknown> = {}
+  if (parsed.data.type === 'colis' && parsed.data.poids_max_kg) {
+    // poids_dispo_kg initialisé à la capacité max déclarée
+    extraFields.poids_dispo_kg = parsed.data.poids_max_kg
   }
+  if (parsed.data.type === 'covoiturage') {
+    if (profil.statut_permis !== 'vérifié') {
+      return NextResponse.json({ error: 'Permis de conduire non vérifié' }, { status: 403 })
+    }
+    if (!parsed.data.vehicule_transporteur_id) {
+      return NextResponse.json({ error: 'Véhicule requis' }, { status: 400 })
+    }
 
-  const extraFields = parsed.data.type === 'colis' && vehicule.capacite_kg
-    ? { poids_dispo_kg: vehicule.capacite_kg }
-    : {}
+    const { data: vehicule } = await supabase
+      .from('vehicules_transporteur')
+      .select('statut_verification, capacite_kg')
+      .eq('id', parsed.data.vehicule_transporteur_id)
+      .eq('user_id', user.id)
+      .single()
+
+    if (!vehicule || vehicule.statut_verification !== 'vérifié') {
+      return NextResponse.json({ error: 'Véhicule non vérifié ou introuvable' }, { status: 403 })
+    }
+  }
 
   const { data: trajet, error } = await supabase
     .from('trajets')

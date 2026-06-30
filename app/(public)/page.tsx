@@ -35,7 +35,7 @@ export default function LandingPage() {
               </h1>
 
               <p style={{ marginTop: 22, fontSize: 18, lineHeight: 1.55, maxWidth: 520, color: 'var(--ink-2)' }}>
-                Covoiturage entre particuliers, transport de vos colis et location de véhicules. Trois services, une seule plateforme, des prix en FCFA, un support humain joignable au téléphone et sur WhatsApp.
+                Covoiturage entre particuliers, transport de vos colis par avion et location de véhicules. Trois services, une seule plateforme, des prix en FCFA, un support humain joignable au téléphone et sur WhatsApp.
               </p>
 
               <div className="hero-buttons">
@@ -119,8 +119,8 @@ export default function LandingPage() {
               {
                 href: '/colis',
                 num: 'PÔLE 02',
-                title: 'Transport de colis',
-                desc: 'Envoyez vos documents, marchandises et objets fragiles via des transporteurs vérifiés qui empruntent déjà votre itinéraire.',
+                title: 'Transport de colis par avion',
+                desc: 'Envoyez vos documents, marchandises et objets fragiles par avion via nos transitaires partenaires.',
                 illu: 'box',
               },
               {
@@ -214,7 +214,7 @@ export default function LandingPage() {
 
           <div className="steps-grid">
             {[
-              { num: '01 — RECHERCHE', title: 'Choisissez votre service', desc: 'Covoiturage, transport de colis ou location. Indiquez votre départ, arrivée et date, parcourez les annonces disponibles.' },
+              { num: '01 — RECHERCHE', title: 'Choisissez votre service', desc: 'Covoiturage, transport de colis par avion ou location. Parcourez les annonces disponibles, ou décrivez directement votre envoi de colis.' },
               { num: '02 — DEMANDE', title: 'Envoyez une demande', desc: 'Sur la fiche qui vous intéresse, remplissez le formulaire en quelques secondes. Vos coordonnées sont pré-remplies.' },
               { num: '03 — CONTACT', title: 'Le support vous appelle', desc: 'Notre équipe vous joint au téléphone ou WhatsApp pour confirmer les détails et organiser la mise en relation.' },
               { num: '04 — VOYAGE', title: 'Vous voyagez sereinement', desc: 'Vous êtes mis en contact direct avec le conducteur, le transporteur ou le propriétaire. Bonne route avec Lili-Ride.' },
@@ -337,7 +337,7 @@ export default function LandingPage() {
             <div style={{ position: 'relative', zIndex: 1 }}>
               <h2 style={{ color: '#fff' }}>Vous conduisez déjà ?<br />Rentabilisez vos trajets.</h2>
               <p style={{ color: 'rgba(255,255,255,0.85)', marginTop: 16, fontSize: 16 }}>
-                Publiez vos trajets covoiturage, vos disponibilités pour le transport de colis ou mettez votre véhicule à la location. La vérification est gratuite et prend 24h en moyenne.
+                Publiez vos trajets covoiturage, vos disponibilités pour le transport de colis par avion ou mettez votre véhicule à la location. La vérification est gratuite et prend 24h en moyenne.
               </p>
               <div className="cta-buttons">
                 <Link href="/connexion" className="btn btn-accent btn-lg">Devenir transporteur</Link>

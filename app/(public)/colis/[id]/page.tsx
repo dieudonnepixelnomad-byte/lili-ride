@@ -20,7 +20,7 @@ export default async function ColisDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, poids_dispo_kg, users(id, nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, poids_max_kg, poids_dispo_kg, prix_par_kg, users(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .eq('type', 'colis')
     .single()
@@ -32,7 +32,7 @@ export default async function ColisDetailPage({ params }: Props) {
     <div className="section-sm">
       <div className="container-tight">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, color: 'var(--ink-3)', marginBottom: 32 }}>
-          <Link href="/colis" style={{ color: 'var(--ink-3)' }}>Transport de colis</Link>
+          <Link href="/colis" style={{ color: 'var(--ink-3)' }}>Transport de colis par avion</Link>
           <span>›</span>
           <span>{t.depart_label} → {t.arrivee_label}</span>
         </div>
@@ -41,7 +41,7 @@ export default async function ColisDetailPage({ params }: Props) {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
               <span className="badge badge-accent badge-dot">Actif</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)', letterSpacing: '0.08em' }}>TRANSPORT DE COLIS</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)', letterSpacing: '0.08em' }}>TRANSPORT DE COLIS PAR AVION</span>
             </div>
 
             <h1 style={{ fontSize: 'clamp(28px, 3.5vw, 42px)' }}>
@@ -59,8 +59,18 @@ export default async function ColisDetailPage({ params }: Props) {
               </div>
               <div>
                 <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>Prix</div>
-                <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, marginTop: 4, color: 'var(--primary-deep)' }}>{t.prix.toLocaleString('fr-FR')} FCFA</div>
+                <div style={{ fontFamily: 'var(--font-serif)', fontSize: 22, marginTop: 4, color: 'var(--primary-deep)' }}>
+                  {t.prix_par_kg ? `${t.prix_par_kg.toLocaleString('fr-FR')} FCFA/kg` : `${t.prix.toLocaleString('fr-FR')} FCFA`}
+                </div>
               </div>
+              {t.poids_max_kg && (
+                <div>
+                  <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>Capacité</div>
+                  <div style={{ fontSize: 15, marginTop: 4, color: 'var(--ink)' }}>
+                    {t.poids_dispo_kg ?? t.poids_max_kg} kg disponible{t.poids_max_kg !== t.poids_dispo_kg ? ` / ${t.poids_max_kg} kg` : ''}
+                  </div>
+                </div>
+              )}
             </div>
 
             {t.types_colis && t.types_colis.length > 0 && (
@@ -75,18 +85,18 @@ export default async function ColisDetailPage({ params }: Props) {
             )}
 
             {/* Points précis */}
-            {(t.lieu_ramassage || t.lieu_depot) && (
+            {(t.lieu_embarquement || t.lieu_debarquement) && (
               <div className="pickup-grid">
-                {t.lieu_ramassage && (
+                {t.lieu_embarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de ramassage</div>
-                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_ramassage}</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d'embarquement</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_embarquement}</div>
                   </div>
                 )}
-                {t.lieu_depot && (
+                {t.lieu_debarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de dépose</div>
-                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_depot}</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu de débarquement</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_debarquement}</div>
                   </div>
                 )}
               </div>
@@ -124,8 +134,8 @@ export default async function ColisDetailPage({ params }: Props) {
             <DemandeForm
               trajetId={t.id}
               type="colis"
-              prix={t.prix}
-              prixLabel="pour ce trajet"
+              prix={t.prix_par_kg ?? t.prix}
+              prixLabel={t.prix_par_kg ? 'par kg' : 'pour ce trajet'}
               poidsDispoKg={t.poids_dispo_kg ?? null}
               trajetStatut={t.statut}
             />

@@ -20,7 +20,7 @@ export default async function CovoiturageDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule)')
     .eq('id', id)
     .eq('type', 'covoiturage')
     .single()
@@ -62,7 +62,11 @@ export default async function CovoiturageDetailPage({ params }: Props) {
               </div>
               <div>
                 <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>Places disponibles</div>
-                <div style={{ fontSize: 15, marginTop: 4, color: 'var(--ink)' }}>{t.places_dispo} place{(t.places_dispo ?? 0) > 1 ? 's' : ''}</div>
+                <div style={{ fontSize: 15, marginTop: 4, color: 'var(--ink)' }}>
+                  {t.places_dispo ?? 0}
+                  {t.vehicules_transporteur?.nb_places != null && ` / ${t.vehicules_transporteur.nb_places}`}
+                  {' '}place{(t.places_dispo ?? 0) > 1 ? 's' : ''}
+                </div>
               </div>
               <div>
                 <div style={{ fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600 }}>Prix par place</div>
@@ -71,18 +75,18 @@ export default async function CovoiturageDetailPage({ params }: Props) {
             </div>
 
             {/* Points précis */}
-            {(t.lieu_ramassage || t.lieu_depot) && (
+            {(t.lieu_embarquement || t.lieu_debarquement) && (
               <div className="pickup-grid">
-                {t.lieu_ramassage && (
+                {t.lieu_embarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de ramassage</div>
-                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_ramassage}</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d'embarquement</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_embarquement}</div>
                   </div>
                 )}
-                {t.lieu_depot && (
+                {t.lieu_debarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Point de dépose</div>
-                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_depot}</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu de débarquement</div>
+                    <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_debarquement}</div>
                   </div>
                 )}
               </div>
@@ -106,6 +110,35 @@ export default async function CovoiturageDetailPage({ params }: Props) {
               <div style={{ marginTop: 32 }}>
                 <h3 style={{ fontSize: 18, marginBottom: 12 }}>Description</h3>
                 <p style={{ lineHeight: 1.65 }}>{t.description}</p>
+              </div>
+            )}
+
+            {/* Véhicule */}
+            {t.vehicules_transporteur && (
+              <div className="card card-pad" style={{ marginTop: 32 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Véhicule</div>
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  {t.vehicules_transporteur.photo_vehicule_url && (
+                    <img
+                      src={t.vehicules_transporteur.photo_vehicule_url}
+                      alt="Photo du véhicule"
+                      style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--line)' }}
+                    />
+                  )}
+                  <div>
+                    {(t.vehicules_transporteur.marque || t.vehicules_transporteur.modele) && (
+                      <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)' }}>
+                        {[t.vehicules_transporteur.marque, t.vehicules_transporteur.modele].filter(Boolean).join(' ')}
+                      </div>
+                    )}
+                    {t.vehicules_transporteur.type_vehicule && (
+                      <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>{t.vehicules_transporteur.type_vehicule}</div>
+                    )}
+                    {t.vehicules_transporteur.nb_places != null && (
+                      <div style={{ fontSize: 13, color: 'var(--ink-3)', marginTop: 2 }}>{t.vehicules_transporteur.nb_places} places au total</div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

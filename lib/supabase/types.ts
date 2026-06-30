@@ -126,13 +126,15 @@ export interface Database {
           arrivee_label: string
           arrivee_lat: number | null
           arrivee_lng: number | null
-          lieu_ramassage: string | null
-          lieu_depot: string | null
+          lieu_embarquement: string | null
+          lieu_debarquement: string | null
           date_depart: string
           heure_depart: string
           prix: number
           places_dispo: number | null
+          poids_max_kg: number | null
           poids_dispo_kg: number | null
+          prix_par_kg: number | null
           types_colis: string[] | null
           description: string | null
           statut: 'actif' | 'complet' | 'annulé'
@@ -149,13 +151,15 @@ export interface Database {
           arrivee_label: string
           arrivee_lat?: number | null
           arrivee_lng?: number | null
-          lieu_ramassage?: string | null
-          lieu_depot?: string | null
+          lieu_embarquement?: string | null
+          lieu_debarquement?: string | null
           date_depart: string
           heure_depart: string
           prix: number
           places_dispo?: number | null
+          poids_max_kg?: number | null
           poids_dispo_kg?: number | null
+          prix_par_kg?: number | null
           types_colis?: string[] | null
           description?: string | null
           statut?: 'actif' | 'complet' | 'annulé'

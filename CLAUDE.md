@@ -8,7 +8,7 @@
 
 **Lili-Ride** est une plateforme web de mobilité camerounaise regroupant trois services :
 - Covoiturage entre particuliers
-- Transport de colis sur trajets définis
+- Transport de colis **par avion** (trajets publiés par des transitaires partenaires)
 - Location de véhicules
 
 **Marché cible** : Cameroun francophone — villes pilotes : Douala, Yaoundé, Bafoussam  
@@ -71,7 +71,7 @@ types/index.ts      → Types globaux du projet
 | `/` | Landing page — présentation des 3 pôles |
 | `/covoiturage` | Recherche et liste des trajets covoiturage |
 | `/covoiturage/[id]` | Détail d'un trajet covoiturage |
-| `/colis` | Recherche et liste des trajets colis |
+| `/colis` | Recherche et liste des trajets colis (par avion, via transitaires partenaires) |
 | `/colis/[id]` | Détail d'un trajet colis |
 | `/location` | Recherche et liste des véhicules |
 | `/location/[id]` | Détail d'un véhicule + galerie photos |
@@ -257,10 +257,10 @@ Un seul type de compte. Le même utilisateur peut être passager, chauffeur, exp
 | `rejeté` | Chercher uniquement — doit corriger et resoumettre |
 
 **Règle de publication d'un trajet :**
-- `profils_transporteur.statut_conducteur = 'vérifié'`
-- **ET** le véhicule sélectionné : `vehicules_transporteur.statut_verification = 'vérifié'`
+- Covoiturage : `statut_cni = 'vérifié'` **ET** `statut_permis = 'vérifié'` **ET** véhicule sélectionné `vérifié`
+- Colis (par avion) : `statut_cni = 'vérifié'` uniquement — pas de permis ni de véhicule requis (transport géré par transitaires partenaires)
 
-Les deux conditions doivent être vraies. Un véhicule non vérifié bloque même si le permis est ok.
+Pour le covoiturage, les trois conditions doivent être vraies. Un véhicule non vérifié bloque même si le permis est ok.
 
 ---
 

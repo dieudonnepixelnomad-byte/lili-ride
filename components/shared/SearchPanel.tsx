@@ -26,7 +26,7 @@ const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
   },
   {
     id: 'colis',
-    label: 'Colis',
+    label: 'Colis (avion)',
     icon: (
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
         <path d="M3 7l7-3 7 3v6l-7 3-7-3V7z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />

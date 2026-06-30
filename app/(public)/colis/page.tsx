@@ -29,8 +29,9 @@ export default async function ColisPage({ searchParams }: Props) {
     <>
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--line)', padding: '32px 0' }}>
         <div className="container">
-          <span className="kicker">Transport de colis</span>
-          <h1 style={{ fontSize: 'clamp(28px, 3vw, 40px)', marginTop: 8 }}>Transporteurs disponibles</h1>
+          <span className="kicker">Transport de colis par avion</span>
+          <h1 style={{ fontSize: 'clamp(28px, 3vw, 40px)', marginTop: 8 }}>Transitaires disponibles</h1>
+          <p style={{ marginTop: 8, color: 'var(--ink-3)', fontSize: 15 }}>Envoi de colis par voie aérienne via nos transitaires partenaires.</p>
           <div style={{ marginTop: 24 }}>
             <SearchPanel
               defaultTab="colis"
@@ -73,7 +74,7 @@ export default async function ColisPage({ searchParams }: Props) {
               {!trajets || trajets.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '80px 0' }}>
                   <div style={{ fontSize: 32 }}>📦</div>
-                  <h3 style={{ marginTop: 16, fontSize: 22 }}>Aucun transporteur disponible</h3>
+                  <h3 style={{ marginTop: 16, fontSize: 22 }}>Aucun transitaire disponible</h3>
                   <p style={{ marginTop: 8, color: 'var(--ink-3)' }}>Contactez le support pour un envoi sur-mesure.</p>
                   <Link href="/support" className="btn btn-primary" style={{ marginTop: 24 }}>Contacter le support</Link>
                 </div>

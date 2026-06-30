@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Check trajet availability before inserting
+  let trajetSnapshot: { statut: string; places_dispo: number | null; poids_dispo_kg: number | null; type: string } | null = null
   if (parsed.data.trajet_id) {
     const { data: trajet } = await supabase
       .from('trajets')
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
         )
       }
     }
+    trajetSnapshot = trajet
   }
 
   const { data: demande, error } = await supabase
@@ -87,6 +89,26 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Décrémente places_dispo pour covoiturage
+  if (parsed.data.trajet_id && parsed.data.type === 'covoiturage' && parsed.data.nb_places && trajetSnapshot) {
+    const newDispo = Math.max(0, (trajetSnapshot.places_dispo ?? 0) - parsed.data.nb_places)
+    await supabase
+      .from('trajets')
+      .update({
+        places_dispo: newDispo,
+        ...(newDispo === 0 ? { statut: 'complet' } : {}),
+      })
+      .eq('id', parsed.data.trajet_id)
+  }
+
+  // Décrémente poids_dispo_kg quand un colis est réservé avec un poids précis
+  if (parsed.data.trajet_id && parsed.data.type === 'colis' && parsed.data.poids_kg) {
+    await supabase.rpc('decrement_poids_dispo', {
+      trajet_id: parsed.data.trajet_id,
+      poids: parsed.data.poids_kg,
+    })
   }
 
   // Fetch annonce details for email

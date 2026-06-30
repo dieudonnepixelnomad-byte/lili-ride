@@ -185,9 +185,15 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
     )
   }
 
+  const poidsDepasseCapacite =
+    type === 'colis' &&
+    poidsDispoKg != null &&
+    form.poids_kg !== '' &&
+    parseFloat(form.poids_kg) > poidsDispoKg
+
   const typeLabels: Record<TypeDemande, string> = {
     covoiturage: 'Réserver une place',
-    colis: 'Envoyer un colis',
+    colis: 'Envoyer un colis par avion',
     location: 'Louer ce véhicule',
   }
 
@@ -226,8 +232,15 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
           <div className="field">
             <label className="field-label">Nombre de places</label>
             <select className="select" value={form.nb_places} onChange={e => update('nb_places', e.target.value)}>
-              {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>)}
+              {Array.from({ length: Math.min(4, placesDisponibles ?? 4) }, (_, i) => i + 1).map(n => (
+                <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
+              ))}
             </select>
+            {placesDisponibles != null && (
+              <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>
+                {placesDisponibles} place{placesDisponibles > 1 ? 's' : ''} disponible{placesDisponibles > 1 ? 's' : ''}
+              </div>
+            )}
           </div>
         )}
 
@@ -237,21 +250,45 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
               <label className="field-label">Description du colis</label>
               <textarea className="textarea" placeholder="Nature, dimensions approximatives…" value={form.description_colis} onChange={e => update('description_colis', e.target.value)} required />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div className="field">
-                <label className="field-label">Poids (kg)</label>
-                <input className="input" type="number" placeholder="Ex: 5" min="0.1" step="0.1"
-                  value={form.poids_kg} onChange={e => update('poids_kg', e.target.value)} />
-                {poidsDispoKg != null && (
-                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>
-                    Capacité restante : {poidsDispoKg} kg
-                  </div>
-                )}
-              </div>
-              <div className="field">
-                <label className="field-label">Description du poids <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-                <input className="input" type="text" placeholder="Ex: carton, fragile…" value={form.poids_estime} onChange={e => update('poids_estime', e.target.value)} />
-              </div>
+            <div className="field">
+              <label className="field-label">Poids du colis (kg)</label>
+              {(() => {
+                const poidsVal = form.poids_kg ? parseFloat(form.poids_kg) : 0
+                const depasse = poidsDispoKg != null && poidsVal > 0 && poidsVal > poidsDispoKg
+                return (
+                  <>
+                    <input
+                      className="input"
+                      type="number"
+                      placeholder="Ex: 5"
+                      min="0.1"
+                      step="0.1"
+                      required
+                      value={form.poids_kg}
+                      onChange={e => update('poids_kg', e.target.value)}
+                      style={depasse ? { borderColor: 'var(--danger)', outline: '2px solid color-mix(in srgb, var(--danger) 20%, transparent)' } : undefined}
+                    />
+                    {depasse ? (
+                      <div style={{ fontSize: 12, color: 'var(--danger)', marginTop: 4, fontWeight: 600 }}>
+                        ✕ Poids trop élevé — capacité restante : {poidsDispoKg} kg
+                      </div>
+                    ) : poidsDispoKg != null && (
+                      <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>
+                        Capacité restante : <strong>{poidsDispoKg} kg</strong>
+                      </div>
+                    )}
+                    {!depasse && form.poids_kg && prix && (
+                      <div style={{ fontSize: 12, color: 'var(--primary-deep)', marginTop: 4, fontWeight: 600 }}>
+                        Estimation : {(poidsVal * prix).toLocaleString('fr-FR')} FCFA
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+            <div className="field">
+              <label className="field-label">Précisions <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+              <input className="input" type="text" placeholder="Ex: carton fragile, objets de valeur…" value={form.poids_estime} onChange={e => update('poids_estime', e.target.value)} />
             </div>
           </>
         )}
@@ -276,7 +313,7 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
 
         {error && <div className="notice warn" style={{ padding: '10px 14px' }}>{error}</div>}
 
-        <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginTop: 4 }}>
+        <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading || poidsDepasseCapacite} style={{ marginTop: 4 }}>
           {loading ? 'Envoi…' : typeLabels[type]}
         </button>
 

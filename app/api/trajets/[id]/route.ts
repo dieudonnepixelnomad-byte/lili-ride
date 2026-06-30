@@ -14,8 +14,8 @@ const patchSchema = z.object({
   prix: z.number().positive().optional(),
   places_dispo: z.number().int().min(1).optional().nullable(),
   types_colis: z.array(z.string()).optional().nullable(),
-  lieu_ramassage: z.string().optional().nullable(),
-  lieu_depot: z.string().optional().nullable(),
+  lieu_embarquement: z.string().optional().nullable(),
+  lieu_debarquement: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   statut: z.enum(['actif', 'complet', 'annulé']).optional(),
 })

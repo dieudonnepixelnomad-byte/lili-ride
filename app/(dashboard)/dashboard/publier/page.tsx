@@ -67,12 +67,14 @@ export default function PublierPage() {
   // Covoiturage
   const [placesDispo, setPlacesDispo] = useState('3')
 
-  // Points précis ramassage / dépôt (covoiturage + colis)
-  const [lieuRamassage, setLieuRamassage] = useState('')
-  const [lieuDepot, setLieuDepot] = useState('')
+  // Points précis embarquement / débarquement (covoiturage + colis)
+  const [lieuEmbarquement, setLieuEmbarquement] = useState('')
+  const [lieuDebarquement, setLieuDebarquement] = useState('')
 
   // Colis
   const [typesColis, setTypesColis] = useState<string[]>([])
+  const [poidsMaxKg, setPoidsMaxKg] = useState('')
+  const [prixParKg, setPrixParKg] = useState('')
 
   // Location
   const [marque, setMarque] = useState('')
@@ -115,13 +117,13 @@ export default function PublierPage() {
       setVerifStatus('cni_rejeté'); return
     }
 
-    if (type === 'location') {
-      // Location: CNI only
+    if (type === 'location' || type === 'colis') {
+      // Location et colis (par avion) : CNI uniquement
       setVerifStatus('ok')
       return
     }
 
-    // Covoiturage / colis: CNI + permis + at least one verified vehicle
+    // Covoiturage : CNI + permis + at least one verified vehicle
     if (!profil.statut_permis || profil.statut_permis === 'non_soumis') {
       setVerifStatus('permis_non_soumis'); return
     }
@@ -191,8 +193,18 @@ export default function PublierPage() {
       return
     }
 
-    if ((serviceType === 'covoiturage' || serviceType === 'colis') && !selectedVehiculeId) {
+    if (serviceType === 'covoiturage' && !selectedVehiculeId) {
       setError('Sélectionnez un véhicule.')
+      return
+    }
+
+    if (serviceType === 'colis' && (!poidsMaxKg || parseFloat(poidsMaxKg) <= 0)) {
+      setError('Précisez le poids maximum accepté (kg).')
+      return
+    }
+
+    if (serviceType === 'colis' && (!prixParKg || parseFloat(prixParKg) <= 0)) {
+      setError('Précisez le prix par kg.')
       return
     }
 
@@ -224,7 +236,7 @@ export default function PublierPage() {
         }
       } else {
         body = {
-          vehicule_transporteur_id: selectedVehiculeId,
+          vehicule_transporteur_id: serviceType === 'covoiturage' ? selectedVehiculeId : undefined,
           type: serviceType,
           depart_label: depart.label,
           depart_lat: depart.lat,
@@ -233,11 +245,13 @@ export default function PublierPage() {
           arrivee_lat: arrivee.lat,
           arrivee_lng: arrivee.lng,
           date_depart: dateDepart, heure_depart: heureDepart,
-          prix: parseFloat(prix),
+          prix: serviceType === 'colis' ? parseFloat(prixParKg) : parseFloat(prix),
           places_dispo: serviceType === 'covoiturage' ? parseInt(placesDispo) : undefined,
           types_colis: serviceType === 'colis' ? typesColis : undefined,
-          lieu_ramassage: lieuRamassage || undefined,
-          lieu_depot: lieuDepot || undefined,
+          poids_max_kg: serviceType === 'colis' && poidsMaxKg ? parseFloat(poidsMaxKg) : undefined,
+          prix_par_kg: serviceType === 'colis' && prixParKg ? parseFloat(prixParKg) : undefined,
+          lieu_embarquement: lieuEmbarquement || undefined,
+          lieu_debarquement: lieuDebarquement || undefined,
           description,
         }
       }
@@ -275,7 +289,7 @@ export default function PublierPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, maxWidth: 800 }}>
           {([
             { id: 'covoiturage' as ServiceType, title: 'Covoiturage', desc: 'Proposez des places dans votre véhicule sur un trajet que vous effectuez déjà.' },
-            { id: 'colis' as ServiceType, title: 'Transport de colis', desc: 'Acceptez de transporter des colis sur vos trajets réguliers.' },
+            { id: 'colis' as ServiceType, title: 'Transport de colis (par avion)', desc: 'Acceptez de transporter des colis par avion en tant que transitaire partenaire.' },
             { id: 'location' as ServiceType, title: 'Location de véhicule', desc: 'Mettez votre véhicule à disposition pour des locations à la journée.' },
           ]).map(({ id, title, desc }) => (
             <button key={id} type="button" onClick={() => handleSelectService(id)} style={{
@@ -363,7 +377,7 @@ export default function PublierPage() {
     }
 
     const cfg = configs[verifStatus as keyof typeof configs]
-    const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis', location: 'Location de véhicule' }[serviceType]
+    const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis (par avion)', location: 'Location de véhicule' }[serviceType]
 
     return (
       <>
@@ -402,7 +416,7 @@ export default function PublierPage() {
     )
   }
 
-  const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis', location: 'Location de véhicule' }[serviceType]
+  const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis (par avion)', location: 'Location de véhicule' }[serviceType]
 
   return (
     <>
@@ -419,8 +433,8 @@ export default function PublierPage() {
         <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {serviceType !== 'location' ? (
             <>
-              {/* Sélecteur de véhicule */}
-              {verifiedVehicules.length > 0 && (
+              {/* Sélecteur de véhicule (covoiturage uniquement) */}
+              {serviceType === 'covoiturage' && verifiedVehicules.length > 0 && (
                 <div className="field">
                   <label className="field-label">Véhicule utilisé pour ce trajet</label>
                   <select className="select" value={selectedVehiculeId} onChange={e => setSelectedVehiculeId(e.target.value)} required>
@@ -467,30 +481,44 @@ export default function PublierPage() {
                   <input className="input" type="time" value={heureDepart} onChange={e => setHeureDepart(e.target.value)} required />
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="field">
-                  <label className="field-label">Prix (FCFA)</label>
-                  <input className="input" type="number" value={prix} onChange={e => setPrix(e.target.value)} required placeholder="Ex: 5000" min="0" />
-                </div>
-                {serviceType === 'covoiturage' && (
+              {serviceType === 'colis' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="field">
-                    <label className="field-label">Places disponibles</label>
-                    <select className="select" value={placesDispo} onChange={e => setPlacesDispo(e.target.value)}>
-                      {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+                    <label className="field-label">Poids maximum accepté (kg)</label>
+                    <input className="input" type="number" value={poidsMaxKg} onChange={e => setPoidsMaxKg(e.target.value)} required placeholder="Ex: 50" min="0.1" step="0.1" />
+                    <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Capacité totale pour tous les clients</div>
                   </div>
-                )}
-              </div>
+                  <div className="field">
+                    <label className="field-label">Prix par kg (FCFA)</label>
+                    <input className="input" type="number" value={prixParKg} onChange={e => setPrixParKg(e.target.value)} required placeholder="Ex: 2000" min="0" />
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="field">
+                    <label className="field-label">Prix (FCFA)</label>
+                    <input className="input" type="number" value={prix} onChange={e => setPrix(e.target.value)} required placeholder="Ex: 5000" min="0" />
+                  </div>
+                  {serviceType === 'covoiturage' && (
+                    <div className="field">
+                      <label className="field-label">Places disponibles</label>
+                      <select className="select" value={placesDispo} onChange={e => setPlacesDispo(e.target.value)}>
+                        {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="field">
-                  <label className="field-label">Point de ramassage <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-                  <input className="input" type="text" value={lieuRamassage} onChange={e => setLieuRamassage(e.target.value)}
+                  <label className="field-label">Lieu d'embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                  <input className="input" type="text" value={lieuEmbarquement} onChange={e => setLieuEmbarquement(e.target.value)}
                     placeholder="Ex: Carrefour Akwa, face BICEC" />
                   <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Lieu précis où vous prenez les passagers / colis</div>
                 </div>
                 <div className="field">
-                  <label className="field-label">Point de dépose <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-                  <input className="input" type="text" value={lieuDepot} onChange={e => setLieuDepot(e.target.value)}
+                  <label className="field-label">Lieu de débarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                  <input className="input" type="text" value={lieuDebarquement} onChange={e => setLieuDebarquement(e.target.value)}
                     placeholder="Ex: Gare routière de Messa" />
                   <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Lieu précis où vous déposez les passagers / colis</div>
                 </div>
