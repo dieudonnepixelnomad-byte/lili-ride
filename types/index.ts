@@ -108,7 +108,7 @@ export interface Trajet {
   statut: StatutTrajet
   created_at: string
   users?: Pick<User, 'id' | 'nom' | 'telephone' | 'whatsapp' | 'ville' | 'photo_url' | 'email'>
-  vehicules_transporteur?: Pick<VehiculeTransporteur, 'id' | 'nb_places' | 'photo_vehicule_url' | 'marque' | 'modele' | 'type_vehicule'>
+  vehicules_transporteur?: Pick<VehiculeTransporteur, 'id' | 'nb_places' | 'photo_vehicule_url' | 'marque' | 'modele' | 'type_vehicule' | 'plaque'>
 }
 
 export interface Vehicule {

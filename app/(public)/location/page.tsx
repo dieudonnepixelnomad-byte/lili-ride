@@ -14,14 +14,15 @@ export default async function LocationPage({ searchParams }: Props) {
 
   let query = supabase
     .from('vehicules')
-    .select('*, users(id, nom, telephone, ville, photo_url)')
+    .select('*, users!vehicules_user_id_fkey(id, nom, telephone, ville, photo_url)')
     .eq('statut', 'actif')
     .eq('disponible', true)
     .order('created_at', { ascending: false })
 
   if (params.depart) query = query.ilike('lieu_label', `%${params.depart}%`)
 
-  const { data: vehicules } = await query
+  const { data: vehicules, error: vehiculesError } = await query
+  if (vehiculesError) console.error('[location] query error:', vehiculesError)
 
   return (
     <>

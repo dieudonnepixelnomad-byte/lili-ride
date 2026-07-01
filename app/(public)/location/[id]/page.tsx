@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
 import DemandeForm from '@/components/shared/DemandeForm'
+import PhotoLightbox from '@/components/shared/PhotoLightbox'
 import type { Vehicule } from '@/types'
 
 interface Props {
@@ -15,7 +16,7 @@ export default async function LocationDetailPage({ params }: Props) {
 
   const { data: vehicule } = await supabase
     .from('vehicules')
-    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, users!vehicules_user_id_fkey(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .single()
 
@@ -46,14 +47,11 @@ export default async function LocationDetailPage({ params }: Props) {
             </div>
 
             {/* Photo gallery */}
-            <div className="gallery" style={{ marginTop: 28 }}>
-              {v.photos_urls.slice(0, 5).map((url, i) => (
-                <div key={i} style={{ position: 'relative', height: i === 0 ? '100%' : 220, ...(i === 0 ? { gridRow: '1/3' } : {}) }}>
-                  <img src={url} alt={`${v.marque} ${v.modele}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-              ))}
-              {v.photos_urls.length === 0 && (
-                <div className="img-placeholder" style={{ gridColumn: '1/-1', height: 300, borderRadius: 'var(--r-lg)' }}>
+            <div style={{ marginTop: 28 }}>
+              {v.photos_urls.length > 0 ? (
+                <PhotoLightbox photos={v.photos_urls} alt={`${v.marque} ${v.modele}`} />
+              ) : (
+                <div className="img-placeholder" style={{ height: 300, borderRadius: 'var(--r-lg)' }}>
                   <span style={{ background: 'rgba(255,255,255,0.85)', border: '1px solid var(--line)', padding: '4px 10px', borderRadius: 'var(--r-pill)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.05em' }}>
                     {v.marque} {v.modele}
                   </span>

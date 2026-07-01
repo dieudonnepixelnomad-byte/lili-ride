@@ -232,7 +232,7 @@ export default function DemandeForm({ trajetId, vehiculeId, type, prix, prixLabe
           <div className="field">
             <label className="field-label">Nombre de places</label>
             <select className="select" value={form.nb_places} onChange={e => update('nb_places', e.target.value)}>
-              {Array.from({ length: Math.min(4, placesDisponibles ?? 4) }, (_, i) => i + 1).map(n => (
+              {Array.from({ length: placesDisponibles ?? 1 }, (_, i) => i + 1).map(n => (
                 <option key={n} value={n}>{n} place{n > 1 ? 's' : ''}</option>
               ))}
             </select>

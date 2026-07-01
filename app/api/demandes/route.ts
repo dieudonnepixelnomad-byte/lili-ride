@@ -91,16 +91,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Décrémente places_dispo pour covoiturage
-  if (parsed.data.trajet_id && parsed.data.type === 'covoiturage' && parsed.data.nb_places && trajetSnapshot) {
-    const newDispo = Math.max(0, (trajetSnapshot.places_dispo ?? 0) - parsed.data.nb_places)
-    await supabase
-      .from('trajets')
-      .update({
-        places_dispo: newDispo,
-        ...(newDispo === 0 ? { statut: 'complet' } : {}),
-      })
-      .eq('id', parsed.data.trajet_id)
+  // Décrémente places_dispo pour covoiturage (RPC SECURITY DEFINER — bypass RLS)
+  if (parsed.data.trajet_id && parsed.data.type === 'covoiturage' && parsed.data.nb_places) {
+    await supabase.rpc('decrement_places_dispo', {
+      trajet_id: parsed.data.trajet_id,
+      nb: parsed.data.nb_places,
+    })
   }
 
   // Décrémente poids_dispo_kg quand un colis est réservé avec un poids précis
