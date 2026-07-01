@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server'
 import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
 import DemandeForm from '@/components/shared/DemandeForm'
 import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
-import PhotoLightbox from '@/components/shared/PhotoLightbox'
 import type { Trajet } from '@/types'
 
 interface Props {
@@ -130,11 +129,7 @@ export default async function CovoiturageDetailPage({ params }: Props) {
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Véhicule</div>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   {photoVehiculeUrl && (
-                    <PhotoLightbox
-                      src={photoVehiculeUrl}
-                      alt="Photo du véhicule"
-                      thumbStyle={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--line)' }}
-                    />
+                    <img src={photoVehiculeUrl} alt="Photo du véhicule" style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, flexShrink: 0, border: '1px solid var(--line)' }} />
                   )}
                   <div>
                     {(t.vehicules_transporteur.marque || t.vehicules_transporteur.modele) && (
