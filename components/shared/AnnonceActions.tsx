@@ -20,6 +20,10 @@ export default function AnnonceActions({ type, id, label }: Props) {
     ? `/dashboard/mes-annonces/trajet/${id}/modifier`
     : `/dashboard/mes-annonces/vehicule/${id}/modifier`
 
+  const demandeursHref = type === 'trajet'
+    ? `/dashboard/mes-annonces/trajet/${id}/demandeurs`
+    : `/dashboard/mes-annonces/vehicule/${id}/demandeurs`
+
   const apiPath = type === 'trajet' ? `/api/trajets/${id}` : `/api/vehicules/${id}`
 
   async function handleDelete() {
@@ -68,6 +72,12 @@ export default function AnnonceActions({ type, id, label }: Props) {
 
   return (
     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+      <Link
+        href={demandeursHref}
+        style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--line)', textDecoration: 'none', whiteSpace: 'nowrap' }}
+      >
+        Voir demandeurs
+      </Link>
       <Link
         href={editHref}
         style={{ fontSize: 12, padding: '4px 10px', borderRadius: 6, background: 'var(--surface)', color: 'var(--ink)', border: '1px solid var(--line)', textDecoration: 'none', whiteSpace: 'nowrap' }}

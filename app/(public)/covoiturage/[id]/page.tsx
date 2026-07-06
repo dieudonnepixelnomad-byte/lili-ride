@@ -28,6 +28,8 @@ export default async function CovoiturageDetailPage({ params }: Props) {
   if (!trajet) notFound()
 
   const t = trajet as Trajet
+  const { data: { user } } = await supabase.auth.getUser()
+  const estProprietaire = user?.id === t.user_id
 
   const photoVehiculeUrl = t.vehicules_transporteur?.photo_vehicule_url
     ? supabase.storage.from('photos').getPublicUrl(t.vehicules_transporteur.photo_vehicule_url).data.publicUrl
@@ -159,13 +161,19 @@ export default async function CovoiturageDetailPage({ params }: Props) {
 
           {/* Right — Demande form */}
           <div className="detail-form">
-            <DemandeForm
-              trajetId={t.id}
-              type="covoiturage"
-              prix={t.prix}
-              placesDisponibles={t.places_dispo ?? null}
-              trajetStatut={t.statut}
-            />
+            {estProprietaire ? (
+              <div className="card card-pad" style={{ textAlign: 'center', padding: 32 }}>
+                <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>C&rsquo;est votre annonce — vous ne pouvez pas y faire de demande.</p>
+              </div>
+            ) : (
+              <DemandeForm
+                trajetId={t.id}
+                type="covoiturage"
+                prix={t.prix}
+                placesDisponibles={t.places_dispo ?? null}
+                trajetStatut={t.statut}
+              />
+            )}
           </div>
         </div>
       </div>

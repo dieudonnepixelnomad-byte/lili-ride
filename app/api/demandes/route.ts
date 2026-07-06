@@ -43,12 +43,15 @@ export async function POST(req: NextRequest) {
   if (parsed.data.trajet_id) {
     const { data: trajet } = await supabase
       .from('trajets')
-      .select('statut, places_dispo, poids_dispo_kg, type')
+      .select('statut, places_dispo, poids_dispo_kg, type, user_id')
       .eq('id', parsed.data.trajet_id)
       .single()
 
     if (!trajet) {
       return NextResponse.json({ error: 'Annonce introuvable.' }, { status: 404 })
+    }
+    if (trajet.user_id === user.id) {
+      return NextResponse.json({ error: 'Vous ne pouvez pas faire une demande sur votre propre annonce.' }, { status: 403 })
     }
     if (trajet.statut === 'annulé') {
       return NextResponse.json({ error: 'Ce trajet a été annulé.' }, { status: 409 })
@@ -74,6 +77,21 @@ export async function POST(req: NextRequest) {
       }
     }
     trajetSnapshot = trajet
+  }
+
+  if (parsed.data.vehicule_id) {
+    const { data: vehicule } = await supabase
+      .from('vehicules')
+      .select('user_id')
+      .eq('id', parsed.data.vehicule_id)
+      .single()
+
+    if (!vehicule) {
+      return NextResponse.json({ error: 'Annonce introuvable.' }, { status: 404 })
+    }
+    if (vehicule.user_id === user.id) {
+      return NextResponse.json({ error: 'Vous ne pouvez pas faire une demande sur votre propre annonce.' }, { status: 403 })
+    }
   }
 
   const { data: demande, error } = await supabase

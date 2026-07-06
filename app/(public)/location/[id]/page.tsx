@@ -22,6 +22,8 @@ export default async function LocationDetailPage({ params }: Props) {
 
   if (!vehicule) notFound()
   const v = vehicule as Vehicule
+  const { data: { user } } = await supabase.auth.getUser()
+  const estProprietaire = user?.id === v.user_id
 
   return (
     <div className="section-sm">
@@ -86,7 +88,13 @@ export default async function LocationDetailPage({ params }: Props) {
           </div>
 
           <div className="detail-form">
-            <DemandeForm vehiculeId={v.id} type="location" prix={v.prix_jour} prixLabel="par jour" />
+            {estProprietaire ? (
+              <div className="card card-pad" style={{ textAlign: 'center', padding: 32 }}>
+                <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>C&rsquo;est votre annonce — vous ne pouvez pas y faire de demande.</p>
+              </div>
+            ) : (
+              <DemandeForm vehiculeId={v.id} type="location" prix={v.prix_jour} prixLabel="par jour" />
+            )}
           </div>
         </div>
       </div>

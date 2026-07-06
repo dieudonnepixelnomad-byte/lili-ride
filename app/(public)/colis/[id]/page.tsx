@@ -27,6 +27,8 @@ export default async function ColisDetailPage({ params }: Props) {
 
   if (!trajet) notFound()
   const t = trajet as Trajet
+  const { data: { user } } = await supabase.auth.getUser()
+  const estProprietaire = user?.id === t.user_id
 
   return (
     <div className="section-sm">
@@ -131,14 +133,20 @@ export default async function ColisDetailPage({ params }: Props) {
           </div>
 
           <div className="detail-form">
-            <DemandeForm
-              trajetId={t.id}
-              type="colis"
-              prix={t.prix_par_kg ?? t.prix}
-              prixLabel={t.prix_par_kg ? 'par kg' : 'pour ce trajet'}
-              poidsDispoKg={t.poids_dispo_kg ?? null}
-              trajetStatut={t.statut}
-            />
+            {estProprietaire ? (
+              <div className="card card-pad" style={{ textAlign: 'center', padding: 32 }}>
+                <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>C&rsquo;est votre annonce — vous ne pouvez pas y faire de demande.</p>
+              </div>
+            ) : (
+              <DemandeForm
+                trajetId={t.id}
+                type="colis"
+                prix={t.prix_par_kg ?? t.prix}
+                prixLabel={t.prix_par_kg ? 'par kg' : 'pour ce trajet'}
+                poidsDispoKg={t.poids_dispo_kg ?? null}
+                trajetStatut={t.statut}
+              />
+            )}
           </div>
         </div>
       </div>
