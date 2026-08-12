@@ -55,10 +55,8 @@ export default function Header({ session }: { session?: boolean }) {
               </>
             ) : (
               <>
-                {/* Temporairement masqué : l'accès aux services ne nécessite plus de compte.
                 <Link href="/connexion" className="btn btn-ghost">Connexion</Link>
                 <Link href="/connexion" className="btn btn-primary">Créer un compte</Link>
-                */}
               </>
             )}
           </div>
@@ -98,7 +96,7 @@ export default function Header({ session }: { session?: boolean }) {
             </Link>
           ))}
 
-          {session && <div className="mobile-nav-divider" />}
+          <div className="mobile-nav-divider" />
 
           <div className="mobile-nav-actions">
             {session ? (
@@ -110,10 +108,8 @@ export default function Header({ session }: { session?: boolean }) {
               </>
             ) : (
               <>
-                {/* Temporairement masqué : l'accès aux services ne nécessite plus de compte.
                 <Link href="/connexion" className="btn btn-primary btn-block">Créer un compte</Link>
                 <Link href="/connexion" className="btn btn-outline btn-block">Connexion</Link>
-                */}
               </>
             )}
           </div>
