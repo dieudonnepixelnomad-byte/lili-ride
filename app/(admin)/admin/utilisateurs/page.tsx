@@ -12,7 +12,7 @@ export default async function AdminUtilisateursPage() {
 
   const { data: users, error } = await supabase
     .from('users')
-    .select('id, nom, telephone, ville, role, created_at, profils_transporteur(statut_cni, statut_permis)')
+    .select('id, nom, telephone, ville, role, created_at, profils_transporteur!profils_transporteur_user_id_fkey(statut_cni, statut_permis)')
     .order('created_at', { ascending: false })
 
   return (
