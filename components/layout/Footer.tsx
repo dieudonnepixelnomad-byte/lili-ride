@@ -34,8 +34,22 @@ export default function Footer() {
           <div className="footer-col">
             <h5>Support</h5>
             <Link href="/support">Contact & aide</Link>
-            <a href="tel:+237600000000">+237 6 00 00 00 00</a>
-            <a href="https://wa.me/237600000000" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+            <p style={{ margin: '10px 0 4px', fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
+              Appelez-nous ou écrivez-nous sur WhatsApp.
+            </p>
+            {['+237697208124', '+237671567115'].map(numero => (
+              <div key={numero} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <a href={`tel:${numero}`} style={{ padding: '6px 0' }}>{numero}</a>
+                <a
+                  href={`https://wa.me/${numero.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ padding: '6px 0', color: 'var(--accent-deep)', fontSize: 13 }}
+                >
+                  WhatsApp
+                </a>
+              </div>
+            ))}
             <a href="#">Mentions légales</a>
           </div>
         </div>
