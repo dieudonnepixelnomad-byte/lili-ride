@@ -15,6 +15,8 @@ export default async function AdminDashboardPage() {
     { count: totalVehicules },
     { count: demandesAttente },
     { count: verifAttente },
+    { count: trajetsModeration },
+    { count: vehiculesModeration },
     { data: recentDemandes },
   ] = await Promise.all([
     supabase.from('users').select('*', { count: 'exact', head: true }),
@@ -25,8 +27,12 @@ export default async function AdminDashboardPage() {
       .from('profils_transporteur')
       .select('*', { count: 'exact', head: true })
       .or('statut_cni.eq.en_attente,statut_permis.eq.en_attente'),
+    supabase.from('trajets').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
+    supabase.from('vehicules').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
     supabase.from('demandes').select('id, type, statut, nom_client, created_at, origine').order('created_at', { ascending: false }).limit(8),
   ])
+
+  const annoncesModeration = (trajetsModeration ?? 0) + (vehiculesModeration ?? 0)
 
   return (
     <>
@@ -58,6 +64,18 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Alerts */}
+      {annoncesModeration > 0 && (
+        <div className="notice warn" style={{ marginBottom: 16 }}>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="icon">
+            <path d="M4 3h12v14H4zM7 7h6M7 10h6M7 13h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+          <div>
+            <strong>{annoncesModeration} annonce{annoncesModeration > 1 ? 's' : ''}</strong> en attente de modération.
+            {' '}<Link href="/admin/annonces?statut=en_attente" style={{ color: 'var(--warn)', textDecoration: 'underline' }}>Examiner maintenant →</Link>
+          </div>
+        </div>
+      )}
+
       {(verifAttente ?? 0) > 0 && (
         <div className="notice warn" style={{ marginBottom: 32 }}>
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" className="icon">

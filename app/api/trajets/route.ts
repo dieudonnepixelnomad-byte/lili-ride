@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   const { data: trajet, error } = await supabase
     .from('trajets')
-    .insert({ ...parsed.data, ...extraFields, user_id: user.id, statut: 'actif' })
+    .insert({ ...parsed.data, ...extraFields, user_id: user.id, statut: 'en_attente' })
     .select()
     .single()
 

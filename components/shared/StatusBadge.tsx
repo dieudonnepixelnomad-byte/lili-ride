@@ -10,6 +10,7 @@ const labels: Record<string, string> = {
   non_soumis: 'Non soumis',
   'vérifié': 'Vérifié',
   rejeté: 'Rejeté',
+  suspendu: 'Suspendu',
   'en_attente_verif': 'En attente',
 }
 
@@ -23,6 +24,7 @@ const statusClass: Record<string, string> = {
   non_soumis: 'status-non',
   'vérifié': 'status-verifie',
   rejeté: 'status-rejete',
+  suspendu: 'status-rejete',
 }
 
 export default function StatusBadge({ statut }: { statut: Statut }) {

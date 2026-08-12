@@ -25,6 +25,7 @@ export default async function CovoiturageDetailPage({ params }: Props) {
     .select('*, users(id, nom, telephone, whatsapp, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule, plaque)')
     .eq('id', id)
     .eq('type', 'covoiturage')
+    .eq('statut', 'actif')
     .single()
 
   if (!trajet) notFound()
@@ -94,7 +95,7 @@ export default async function CovoiturageDetailPage({ params }: Props) {
               <div className="pickup-grid">
                 {t.lieu_embarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d'embarquement</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d&apos;embarquement</div>
                     <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_embarquement}</div>
                   </div>
                 )}

@@ -37,6 +37,24 @@ function DemandesRecuesRow({ demandes, colSpan }: { demandes: DemandeChauffeur[]
   )
 }
 
+function ModerationRow({ statut, motif, colSpan }: { statut: string; motif?: string; colSpan: number }) {
+  if (statut !== 'en_attente' && statut !== 'rejeté' && statut !== 'suspendu') return null
+
+  const message = statut === 'en_attente'
+    ? 'Cette annonce est en cours de vérification et n’est pas encore visible publiquement.'
+    : motif
+      ? `Motif de modération : ${motif}`
+      : 'Cette annonce n’est pas visible publiquement. Contactez le support pour plus d’informations.'
+
+  return (
+    <tr>
+      <td colSpan={colSpan} style={{ padding: '10px 16px', background: statut === 'en_attente' ? 'var(--warn-soft)' : 'var(--danger-soft)', color: statut === 'en_attente' ? 'var(--warn)' : 'var(--danger)', fontSize: 13 }}>
+        {message}
+      </td>
+    </tr>
+  )
+}
+
 type DemandeChauffeur = {
   id: string
   type: string
@@ -120,6 +138,7 @@ export default async function MesAnnoncesPage() {
                       <td><StatusBadge statut={t.statut} /></td>
                       <td><AnnonceActions type="trajet" id={t.id} label={`${t.depart_label} → ${t.arrivee_label}`} /></td>
                     </tr>
+                    <ModerationRow statut={t.statut} motif={t.motif_moderation} colSpan={6} />
                     <DemandesRecuesRow demandes={demandesParAnnonce.get(t.id) ?? []} colSpan={6} />
                   </Fragment>
                 ))}
@@ -167,6 +186,7 @@ export default async function MesAnnoncesPage() {
                       <td><StatusBadge statut={v.statut} /></td>
                       <td><AnnonceActions type="vehicule" id={v.id} label={`${v.marque} ${v.modele}`} /></td>
                     </tr>
+                    <ModerationRow statut={v.statut} motif={v.motif_moderation} colSpan={6} />
                     <DemandesRecuesRow demandes={demandesParAnnonce.get(v.id) ?? []} colSpan={6} />
                   </Fragment>
                 ))}

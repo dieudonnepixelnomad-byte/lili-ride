@@ -25,6 +25,7 @@ export default async function ColisDetailPage({ params }: Props) {
     .select('*, poids_max_kg, poids_dispo_kg, prix_par_kg, users(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .eq('type', 'colis')
+    .eq('statut', 'actif')
     .single()
 
   if (!trajet) notFound()
@@ -94,7 +95,7 @@ export default async function ColisDetailPage({ params }: Props) {
               <div className="pickup-grid">
                 {t.lieu_embarquement && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: '12px 16px' }}>
-                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d'embarquement</div>
+                    <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 }}>Lieu d&apos;embarquement</div>
                     <div style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.4 }}>{t.lieu_embarquement}</div>
                   </div>
                 )}

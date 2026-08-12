@@ -17,7 +17,6 @@ const patchSchema = z.object({
   lieu_embarquement: z.string().optional().nullable(),
   lieu_debarquement: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
-  statut: z.enum(['actif', 'complet', 'annulé']).optional(),
 })
 
 async function getOwned(supabase: Awaited<ReturnType<typeof createClient>>, id: string, userId: string) {
@@ -39,7 +38,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const parsed = patchSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Données invalides', details: parsed.error.flatten() }, { status: 400 })
 
-  const { error } = await supabase.from('trajets').update(parsed.data).eq('id', id)
+  const { error } = await supabase.from('trajets').update({
+    ...parsed.data,
+    statut: 'en_attente',
+    motif_moderation: null,
+    modere_par: null,
+    modere_le: null,
+  }).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })

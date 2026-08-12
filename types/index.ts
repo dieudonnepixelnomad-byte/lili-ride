@@ -8,9 +8,9 @@ export type StatutVerification = 'non_soumis' | 'en_attente' | 'vérifié' | 're
 
 export type StatutCarteGrise = 'non_soumis' | 'en_attente' | 'vérifié' | 'rejeté'
 
-export type StatutTrajet = 'actif' | 'complet' | 'annulé'
+export type StatutTrajet = 'en_attente' | 'actif' | 'rejeté' | 'suspendu' | 'complet' | 'annulé'
 
-export type StatutVehicule = 'actif' | 'suspendu'
+export type StatutVehicule = 'en_attente' | 'actif' | 'rejeté' | 'suspendu'
 
 export type StatutDemande = 'en_attente' | 'traitée' | 'annulée'
 
@@ -106,6 +106,9 @@ export interface Trajet {
   types_colis?: TypeColis[]
   description?: string
   statut: StatutTrajet
+  motif_moderation?: string
+  modere_par?: string
+  modere_le?: string
   created_at: string
   users?: Pick<User, 'id' | 'nom' | 'telephone' | 'whatsapp' | 'ville' | 'photo_url' | 'email'>
   vehicules_transporteur?: Pick<VehiculeTransporteur, 'id' | 'nb_places' | 'photo_vehicule_url' | 'marque' | 'modele' | 'type_vehicule' | 'plaque'>
@@ -129,6 +132,9 @@ export interface Vehicule {
   disponible: boolean
   description?: string
   statut: StatutVehicule
+  motif_moderation?: string
+  modere_par?: string
+  modere_le?: string
   // Carte grise verification
   carte_grise_url?: string
   statut_carte_grise: StatutCarteGrise

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       ...parsed.data,
       user_id: user.id,
       disponible: true,
-      statut: 'actif',
+      statut: 'en_attente',
       statut_carte_grise: parsed.data.carte_grise_url ? 'en_attente' : 'non_soumis',
     })
     .select()

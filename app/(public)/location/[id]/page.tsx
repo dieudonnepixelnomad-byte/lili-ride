@@ -20,6 +20,8 @@ export default async function LocationDetailPage({ params }: Props) {
     .from('vehicules')
     .select('*, users!vehicules_user_id_fkey(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
+    .eq('statut', 'actif')
+    .eq('statut_carte_grise', 'vérifié')
     .single()
 
   if (!vehicule) notFound()
