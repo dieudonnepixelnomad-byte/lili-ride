@@ -21,7 +21,10 @@ export default async function AdminDashboardPage() {
     supabase.from('trajets').select('*', { count: 'exact', head: true }).eq('statut', 'actif'),
     supabase.from('vehicules').select('*', { count: 'exact', head: true }).eq('statut', 'actif'),
     supabase.from('demandes').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
-    supabase.from('profils_transporteur').select('*', { count: 'exact', head: true }).eq('statut_verification', 'en_attente'),
+    supabase
+      .from('profils_transporteur')
+      .select('*', { count: 'exact', head: true })
+      .or('statut_cni.eq.en_attente,statut_permis.eq.en_attente'),
     supabase.from('demandes').select('id, type, statut, nom_client, created_at, origine').order('created_at', { ascending: false }).limit(8),
   ])
 
