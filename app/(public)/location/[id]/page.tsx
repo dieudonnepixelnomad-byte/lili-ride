@@ -104,8 +104,6 @@ export default async function LocationDetailPage({ params }: Props) {
             */}
             <DirectContactCard
               title="Réservez ce véhicule directement"
-              telephone={v.users?.telephone}
-              whatsapp={v.users?.whatsapp}
               prix={v.prix_jour}
               prixLabel="par jour"
             />

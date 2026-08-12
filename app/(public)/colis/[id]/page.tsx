@@ -156,8 +156,6 @@ export default async function ColisDetailPage({ params }: Props) {
             */}
             <DirectContactCard
               title="Organisez l’envoi de votre colis"
-              telephone={t.users?.telephone}
-              whatsapp={t.users?.whatsapp}
               prix={t.prix_par_kg ?? t.prix}
               prixLabel={t.prix_par_kg ? 'par kg' : 'pour ce trajet'}
             />

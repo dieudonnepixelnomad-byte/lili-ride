@@ -182,8 +182,6 @@ export default async function CovoiturageDetailPage({ params }: Props) {
             */}
             <DirectContactCard
               title="Réservez votre place directement"
-              telephone={t.users?.telephone}
-              whatsapp={t.users?.whatsapp}
               prix={t.prix}
               prixLabel="par place"
             />
