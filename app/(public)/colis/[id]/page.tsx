@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
-import DemandeForm from '@/components/shared/DemandeForm'
+// Temporairement masqués : ancien parcours avec profil et demande en ligne.
+// import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
+// import DemandeForm from '@/components/shared/DemandeForm'
+import DirectContactCard from '@/components/shared/DirectContactCard'
 import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
 import type { Trajet } from '@/types'
 
@@ -27,8 +29,9 @@ export default async function ColisDetailPage({ params }: Props) {
 
   if (!trajet) notFound()
   const t = trajet as Trajet
-  const { data: { user } } = await supabase.auth.getUser()
-  const estProprietaire = user?.id === t.user_id
+  // Temporairement masqué : utile lors de la réactivation des demandes avec compte.
+  // const { data: { user } } = await supabase.auth.getUser()
+  // const estProprietaire = user?.id === t.user_id
 
   return (
     <div className="section-sm">
@@ -124,15 +127,18 @@ export default async function ColisDetailPage({ params }: Props) {
               </div>
             )}
 
+            {/* Temporairement masqué : fiche du transporteur à réactiver ultérieurement.
             {t.users && (
               <div className="card card-pad" style={{ marginTop: 32 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Transporteur</div>
                 <UserProfileTrigger user={t.users} size="lg" showName />
               </div>
             )}
+            */}
           </div>
 
           <div className="detail-form">
+            {/* Temporairement masqué : ancien formulaire de demande avec compte.
             {estProprietaire ? (
               <div className="card card-pad" style={{ textAlign: 'center', padding: 32 }}>
                 <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>C&rsquo;est votre annonce — vous ne pouvez pas y faire de demande.</p>
@@ -147,6 +153,14 @@ export default async function ColisDetailPage({ params }: Props) {
                 trajetStatut={t.statut}
               />
             )}
+            */}
+            <DirectContactCard
+              title="Organisez l’envoi de votre colis"
+              telephone={t.users?.telephone}
+              whatsapp={t.users?.whatsapp}
+              prix={t.prix_par_kg ?? t.prix}
+              prixLabel={t.prix_par_kg ? 'par kg' : 'pour ce trajet'}
+            />
           </div>
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
-import DemandeForm from '@/components/shared/DemandeForm'
+// Temporairement masqués : ancien parcours avec profil et demande en ligne.
+// import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
+// import DemandeForm from '@/components/shared/DemandeForm'
+import DirectContactCard from '@/components/shared/DirectContactCard'
 import PhotoLightbox from '@/components/shared/PhotoLightbox'
 import type { Vehicule } from '@/types'
 
@@ -22,8 +24,9 @@ export default async function LocationDetailPage({ params }: Props) {
 
   if (!vehicule) notFound()
   const v = vehicule as Vehicule
-  const { data: { user } } = await supabase.auth.getUser()
-  const estProprietaire = user?.id === v.user_id
+  // Temporairement masqué : utile lors de la réactivation des demandes avec compte.
+  // const { data: { user } } = await supabase.auth.getUser()
+  // const estProprietaire = user?.id === v.user_id
 
   return (
     <div className="section-sm">
@@ -79,15 +82,18 @@ export default async function LocationDetailPage({ params }: Props) {
               </div>
             )}
 
+            {/* Temporairement masqué : fiche du propriétaire à réactiver ultérieurement.
             {v.users && (
               <div className="card card-pad" style={{ marginTop: 32 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Propriétaire</div>
                 <UserProfileTrigger user={v.users} size="lg" showName />
               </div>
             )}
+            */}
           </div>
 
           <div className="detail-form">
+            {/* Temporairement masqué : ancien formulaire de demande avec compte.
             {estProprietaire ? (
               <div className="card card-pad" style={{ textAlign: 'center', padding: 32 }}>
                 <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>C&rsquo;est votre annonce — vous ne pouvez pas y faire de demande.</p>
@@ -95,6 +101,14 @@ export default async function LocationDetailPage({ params }: Props) {
             ) : (
               <DemandeForm vehiculeId={v.id} type="location" prix={v.prix_jour} prixLabel="par jour" />
             )}
+            */}
+            <DirectContactCard
+              title="Réservez ce véhicule directement"
+              telephone={v.users?.telephone}
+              whatsapp={v.users?.whatsapp}
+              prix={v.prix_jour}
+              prixLabel="par jour"
+            />
           </div>
         </div>
       </div>
