@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-// Temporairement masqués : ancien parcours avec profil et demande en ligne.
-// import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
+import UserProfileTrigger from '@/components/shared/UserProfileTrigger'
+// Temporairement masqué : ancien parcours de demande en ligne.
 // import DemandeForm from '@/components/shared/DemandeForm'
 import DirectContactCard from '@/components/shared/DirectContactCard'
 import TrajetMapWrapper from '@/components/shared/TrajetMapWrapper'
@@ -153,14 +153,13 @@ export default async function CovoiturageDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* Temporairement masqué : fiche du conducteur à réactiver ultérieurement.
+            {/* Conducteur */}
             {t.users && (
               <div className="card card-pad" style={{ marginTop: 32 }}>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: 'var(--ink)' }}>Conducteur</div>
                 <UserProfileTrigger user={t.users} size="lg" showName />
               </div>
             )}
-            */}
           </div>
 
           {/* Contact direct, sans compte */}
