@@ -175,7 +175,7 @@ export default function PublierPage() {
     const urls: string[] = []
     for (const file of photos) {
       const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`
       const { error: uploadErr } = await supabase.storage.from('vehicules').upload(path, file)
       if (uploadErr) throw new Error(`Upload échoué : ${uploadErr.message}`)
       const { data: { publicUrl } } = supabase.storage.from('vehicules').getPublicUrl(path)
@@ -187,6 +187,10 @@ export default function PublierPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    const departLabel = depart.label.trim()
+    const arriveeLabel = arrivee.label.trim()
+    const lieuLabel = lieu.label.trim()
 
     if (serviceType === 'location' && photos.length === 0) {
       setError('Ajoutez au moins une photo du véhicule.')
@@ -208,13 +212,13 @@ export default function PublierPage() {
       return
     }
 
-    if ((serviceType === 'covoiturage' || serviceType === 'colis') && (!depart.lat || !arrivee.lat)) {
-      setError('Sélectionnez le départ et l\'arrivée depuis les suggestions de la liste.')
+    if ((serviceType === 'covoiturage' || serviceType === 'colis') && (departLabel.length < 2 || arriveeLabel.length < 2)) {
+      setError('Saisissez un lieu de départ et un lieu d’arrivée valides.')
       return
     }
 
-    if (serviceType === 'location' && !lieu.lat) {
-      setError('Sélectionnez le lieu depuis les suggestions de la liste.')
+    if (serviceType === 'location' && lieuLabel.length < 2) {
+      setError('Saisissez un lieu de disponibilité valide.')
       return
     }
 
@@ -228,9 +232,9 @@ export default function PublierPage() {
           marque, modele,
           annee: annee ? parseInt(annee) : undefined,
           couleur, nb_places: parseInt(nbPlaces), carburant, boite,
-          lieu_label: lieu.label,
-          lieu_lat: lieu.lat,
-          lieu_lng: lieu.lng,
+          lieu_label: lieuLabel,
+          lieu_lat: lieu.lat ?? null,
+          lieu_lng: lieu.lng ?? null,
           prix_jour: parseFloat(prix),
           photos_urls: photosUrls, equipements, description,
         }
@@ -238,12 +242,12 @@ export default function PublierPage() {
         body = {
           vehicule_transporteur_id: serviceType === 'covoiturage' ? selectedVehiculeId : undefined,
           type: serviceType,
-          depart_label: depart.label,
-          depart_lat: depart.lat,
-          depart_lng: depart.lng,
-          arrivee_label: arrivee.label,
-          arrivee_lat: arrivee.lat,
-          arrivee_lng: arrivee.lng,
+          depart_label: departLabel,
+          depart_lat: depart.lat ?? null,
+          depart_lng: depart.lng ?? null,
+          arrivee_label: arriveeLabel,
+          arrivee_lat: arrivee.lat ?? null,
+          arrivee_lng: arrivee.lng ?? null,
           date_depart: dateDepart, heure_depart: heureDepart,
           prix: serviceType === 'colis' ? parseFloat(prixParKg) : parseFloat(prix),
           places_dispo: serviceType === 'covoiturage' ? parseInt(placesDispo) : undefined,
@@ -511,7 +515,7 @@ export default function PublierPage() {
               )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="field">
-                  <label className="field-label">Lieu d'embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+                  <label className="field-label">Lieu d&apos;embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
                   <input className="input" type="text" value={lieuEmbarquement} onChange={e => setLieuEmbarquement(e.target.value)}
                     placeholder="Ex: Carrefour Akwa, face BICEC" />
                   <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Lieu précis où vous prenez les passagers / colis</div>

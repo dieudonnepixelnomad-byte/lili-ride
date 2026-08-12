@@ -4,30 +4,35 @@ import { useState, useEffect, useRef } from 'react'
 import { searchNominatim, type NominatimResult } from '@/lib/nominatim'
 
 export function useNominatim(query: string, debounceMs = 400) {
-  const [results, setResults] = useState<NominatimResult[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const normalizedQuery = query.trim()
+  const canSearch = normalizedQuery.length >= 2
+  const [response, setResponse] = useState<{ query: string; results: NominatimResult[] }>({
+    query: '',
+    results: [],
+  })
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     if (timerRef.current) clearTimeout(timerRef.current)
 
-    if (query.length < 2) {
-      setResults([])
-      setIsLoading(false)
-      return
-    }
+    if (!canSearch) return
 
-    setIsLoading(true)
     timerRef.current = setTimeout(async () => {
-      const data = await searchNominatim(query)
-      setResults(data)
-      setIsLoading(false)
+      const data = await searchNominatim(normalizedQuery)
+      if (cancelled) return
+      setResponse({ query: normalizedQuery, results: data })
     }, debounceMs)
 
     return () => {
+      cancelled = true
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [query, debounceMs])
+  }, [normalizedQuery, canSearch, debounceMs])
 
-  return { results, isLoading }
+  return {
+    results: canSearch && response.query === normalizedQuery ? response.results : [],
+    isLoading: canSearch && response.query !== normalizedQuery,
+  }
 }

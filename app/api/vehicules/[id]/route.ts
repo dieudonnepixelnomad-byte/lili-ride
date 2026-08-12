@@ -10,7 +10,7 @@ const patchSchema = z.object({
   nb_places: z.number().int().min(1).optional(),
   carburant: z.enum(['essence', 'diesel', 'hybride']).optional().nullable(),
   boite: z.enum(['manuelle', 'automatique']).optional().nullable(),
-  lieu_label: z.string().min(2).optional(),
+  lieu_label: z.string().trim().min(2).optional(),
   lieu_lat: z.number().optional().nullable(),
   lieu_lng: z.number().optional().nullable(),
   prix_jour: z.number().positive().optional(),

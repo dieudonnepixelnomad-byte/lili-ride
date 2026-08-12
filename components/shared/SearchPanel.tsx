@@ -85,8 +85,8 @@ export default function SearchPanel({ defaultTab = 'covoiturage', defaultDepart 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     const params = new URLSearchParams()
-    if (depart.label) params.set('depart', depart.label)
-    if (arrivee.label) params.set('arrivee', arrivee.label)
+    if (depart.label.trim()) params.set('depart', depart.label.trim())
+    if (arrivee.label.trim()) params.set('arrivee', arrivee.label.trim())
     if (date) params.set('date', date)
     if (depart.lat != null) params.set('depart_lat', depart.lat.toString())
     if (depart.lng != null) params.set('depart_lng', depart.lng.toString())

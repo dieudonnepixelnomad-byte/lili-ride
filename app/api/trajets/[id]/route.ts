@@ -3,10 +3,10 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
 const patchSchema = z.object({
-  depart_label: z.string().min(2).optional(),
+  depart_label: z.string().trim().min(2).optional(),
   depart_lat: z.number().optional().nullable(),
   depart_lng: z.number().optional().nullable(),
-  arrivee_label: z.string().min(2).optional(),
+  arrivee_label: z.string().trim().min(2).optional(),
   arrivee_lat: z.number().optional().nullable(),
   arrivee_lng: z.number().optional().nullable(),
   date_depart: z.string().min(10).optional(),

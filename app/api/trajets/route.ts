@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 const schema = z.object({
   vehicule_transporteur_id: z.string().uuid().optional().nullable(),
   type: z.enum(['covoiturage', 'colis']),
-  depart_label: z.string().min(2),
+  depart_label: z.string().trim().min(2),
   depart_lat: z.number().optional().nullable(),
   depart_lng: z.number().optional().nullable(),
-  arrivee_label: z.string().min(2),
+  arrivee_label: z.string().trim().min(2),
   arrivee_lat: z.number().optional().nullable(),
   arrivee_lng: z.number().optional().nullable(),
   date_depart: z.string().min(10),

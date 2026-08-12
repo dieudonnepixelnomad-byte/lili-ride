@@ -46,10 +46,10 @@ export default function ModifierTrajetForm({ trajet }: Props) {
 
     try {
       const body: Record<string, unknown> = {
-        depart_label: depart.label,
+        depart_label: depart.label.trim(),
         depart_lat: depart.lat ?? null,
         depart_lng: depart.lng ?? null,
-        arrivee_label: arrivee.label,
+        arrivee_label: arrivee.label.trim(),
         arrivee_lat: arrivee.lat ?? null,
         arrivee_lng: arrivee.lng ?? null,
         date_depart: dateDepart,
@@ -155,7 +155,7 @@ export default function ModifierTrajetForm({ trajet }: Props) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div className="field">
-              <label className="field-label">Lieu d'embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
+              <label className="field-label">Lieu d&apos;embarquement <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
               <input className="input" type="text" value={lieuEmbarquement} onChange={e => setLieuEmbarquement(e.target.value)} placeholder="Ex: Carrefour Akwa, face BICEC" />
             </div>
             <div className="field">

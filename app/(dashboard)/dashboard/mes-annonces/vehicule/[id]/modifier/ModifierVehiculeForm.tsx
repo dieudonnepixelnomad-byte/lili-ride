@@ -102,7 +102,7 @@ export default function ModifierVehiculeForm({ vehicule }: Props) {
         nb_places: parseInt(nbPlaces),
         carburant: carburant || null,
         boite: boite || null,
-        lieu_label: lieu.label,
+        lieu_label: lieu.label.trim(),
         lieu_lat: lieu.lat ?? null,
         lieu_lng: lieu.lng ?? null,
         prix_jour: parseFloat(prixJour),

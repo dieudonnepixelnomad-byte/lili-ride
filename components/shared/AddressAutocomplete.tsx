@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { useNominatim } from '@/hooks/useNominatim'
 import { getShortLabel, type NominatimResult } from '@/lib/nominatim'
 
 export interface AddressSelection {
   label: string
-  lat: number
-  lng: number
+  lat?: number
+  lng?: number
 }
 
 interface Props {
@@ -32,15 +32,17 @@ export default function AddressAutocomplete({
 }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const containerRef = useRef<HTMLDivElement>(null)
   const portalRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const { results, isLoading } = useNominatim(searchQuery)
-
-  useEffect(() => { setMounted(true) }, [])
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  )
 
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
@@ -75,8 +77,14 @@ export default function AddressAutocomplete({
 
   function handleSelect(result: NominatimResult) {
     const label = getShortLabel(result)
+    const lat = Number.parseFloat(result.lat)
+    const lng = Number.parseFloat(result.lon)
     onChange(label)
-    onSelect({ label, lat: parseFloat(result.lat), lng: parseFloat(result.lon) })
+    onSelect(
+      Number.isFinite(lat) && Number.isFinite(lng)
+        ? { label, lat, lng }
+        : { label }
+    )
     setSearchQuery('')
     setOpen(false)
   }
@@ -105,6 +113,7 @@ export default function AddressAutocomplete({
         style={inputStyle}
         className={inputClassName}
         required={required}
+        minLength={required ? 2 : undefined}
         autoComplete="off"
       />
       {value && (
@@ -113,6 +122,7 @@ export default function AddressAutocomplete({
           onClick={handleClear}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', padding: 0, fontSize: 16, lineHeight: 1, flexShrink: 0 }}
           tabIndex={-1}
+          aria-label="Effacer l’adresse"
         >
           ×
         </button>

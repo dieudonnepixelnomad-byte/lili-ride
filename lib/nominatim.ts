@@ -3,7 +3,7 @@ export interface NominatimResult {
   display_name: string
   lat: string
   lon: string
-  name: string
+  name?: string
 }
 
 export async function searchNominatim(query: string): Promise<NominatimResult[]> {
@@ -25,7 +25,19 @@ export async function searchNominatim(query: string): Promise<NominatimResult[]>
       },
     })
     if (!res.ok) return []
-    return res.json()
+    const data: unknown = await res.json()
+    if (!Array.isArray(data)) return []
+
+    return data.filter((item): item is NominatimResult => {
+      if (typeof item !== 'object' || item === null) return false
+      const result = item as Partial<NominatimResult>
+      return (
+        typeof result.place_id === 'number' &&
+        typeof result.display_name === 'string' &&
+        typeof result.lat === 'string' &&
+        typeof result.lon === 'string'
+      )
+    })
   } catch {
     return []
   }
@@ -33,5 +45,5 @@ export async function searchNominatim(query: string): Promise<NominatimResult[]>
 
 export function getShortLabel(result: NominatimResult): string {
   if (result.name) return result.name
-  return result.display_name.split(',')[0].trim()
+  return result.display_name.split(',')[0]?.trim() || result.display_name
 }
