@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import AddressAutocomplete from '@/components/shared/AddressAutocomplete'
@@ -28,20 +28,6 @@ type VerifStatus =
   | 'vehicule_manquant'
 
 const TYPES_COLIS = ['documents', 'petit', 'volumineux', 'fragile']
-const EQUIPEMENTS_VEHICULE = [
-  'Climatisation',
-  'GPS / Navigation',
-  'Bluetooth / Audio',
-  'Airbag',
-  'ABS',
-  'Caméra de recul',
-  'Vitres électriques',
-  'Toit ouvrant',
-  'Galerie de toit',
-  '4x4 / 4 roues motrices',
-  'Porte-bagages',
-  'Chargeur USB',
-]
 
 export default function PublierPage() {
   const router = useRouter()
@@ -53,7 +39,7 @@ export default function PublierPage() {
   const [verifStatus, setVerifStatus] = useState<VerifStatus>('idle')
   const [motifRejetCni, setMotifRejetCni] = useState('')
   const [motifRejetPermis, setMotifRejetPermis] = useState('')
-  const [verifiedVehicules, setVerifiedVehicules] = useState<VehiculeTransporteur[]>([])
+  const [vehicules, setVehicules] = useState<VehiculeTransporteur[]>([])
   const [selectedVehiculeId, setSelectedVehiculeId] = useState('')
 
   // Shared fields
@@ -77,17 +63,7 @@ export default function PublierPage() {
   const [prixParKg, setPrixParKg] = useState('')
 
   // Location
-  const [marque, setMarque] = useState('')
-  const [modele, setModele] = useState('')
-  const [annee, setAnnee] = useState('')
-  const [couleur, setCouleur] = useState('')
-  const [nbPlaces, setNbPlaces] = useState('5')
-  const [carburant, setCarburant] = useState('')
-  const [boite, setBoite] = useState('')
   const [lieu, setLieu] = useState<AddressState>({ label: '' })
-  const [photos, setPhotos] = useState<File[]>([])
-  const [equipements, setEquipements] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleSelectService(type: ServiceType) {
     setServiceType(type)
@@ -117,13 +93,25 @@ export default function PublierPage() {
       setVerifStatus('cni_rejeté'); return
     }
 
-    if (type === 'location' || type === 'colis') {
-      // Location et colis (par avion) : CNI uniquement
+    const { data: vehiculesData } = await supabase
+      .from('vehicules_transporteur')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at')
+
+    if (!vehiculesData || vehiculesData.length === 0) {
+      setVerifStatus('vehicule_manquant'); return
+    }
+    setVehicules(vehiculesData as VehiculeTransporteur[])
+
+    // Covoiturage : CNI + permis + véhicule vérifié requis.
+    // Colis et location : un véhicule déjà enregistré est requis.
+    if (type !== 'covoiturage') {
+      setSelectedVehiculeId(vehiculesData[0].id)
       setVerifStatus('ok')
       return
     }
 
-    // Covoiturage : CNI + permis + at least one verified vehicle
     if (!profil.statut_permis || profil.statut_permis === 'non_soumis') {
       setVerifStatus('permis_non_soumis'); return
     }
@@ -135,53 +123,18 @@ export default function PublierPage() {
       setVerifStatus('permis_rejeté'); return
     }
 
-    const { data: vehicules } = await supabase
-      .from('vehicules_transporteur')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('statut_verification', 'vérifié')
-
-    if (!vehicules || vehicules.length === 0) {
+    const verifiedVehicules = vehiculesData.filter(v => v.statut_verification === 'vérifié')
+    if (verifiedVehicules.length === 0) {
       setVerifStatus('vehicule_manquant'); return
     }
 
-    setVerifiedVehicules(vehicules as VehiculeTransporteur[])
-    setSelectedVehiculeId(vehicules[0].id)
+    setSelectedVehiculeId(verifiedVehicules[0].id)
+    setPlacesDispo(String(Math.min(3, verifiedVehicules[0].nb_places ?? 1)))
     setVerifStatus('ok')
   }
 
   function toggleColis(t: string) {
     setTypesColis(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
-  }
-
-  function toggleEquipement(t: string) {
-    setEquipements(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
-  }
-
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
-    setPhotos(prev => [...prev, ...files].slice(0, 5))
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  function removePhoto(index: number) {
-    setPhotos(prev => prev.filter((_, i) => i !== index))
-  }
-
-  async function uploadPhotos(): Promise<string[]> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Non authentifié')
-
-    const urls: string[] = []
-    for (const file of photos) {
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${user.id}/${crypto.randomUUID()}.${ext}`
-      const { error: uploadErr } = await supabase.storage.from('vehicules').upload(path, file)
-      if (uploadErr) throw new Error(`Upload échoué : ${uploadErr.message}`)
-      const { data: { publicUrl } } = supabase.storage.from('vehicules').getPublicUrl(path)
-      urls.push(publicUrl)
-    }
-    return urls
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -192,12 +145,7 @@ export default function PublierPage() {
     const arriveeLabel = arrivee.label.trim()
     const lieuLabel = lieu.label.trim()
 
-    if (serviceType === 'location' && photos.length === 0) {
-      setError('Ajoutez au moins une photo du véhicule.')
-      return
-    }
-
-    if (serviceType === 'covoiturage' && !selectedVehiculeId) {
+    if (!selectedVehiculeId) {
       setError('Sélectionnez un véhicule.')
       return
     }
@@ -227,20 +175,17 @@ export default function PublierPage() {
       let body: Record<string, unknown>
 
       if (serviceType === 'location') {
-        const photosUrls = await uploadPhotos()
         body = {
-          marque, modele,
-          annee: annee ? parseInt(annee) : undefined,
-          couleur, nb_places: parseInt(nbPlaces), carburant, boite,
+          vehicule_transporteur_id: selectedVehiculeId,
           lieu_label: lieuLabel,
           lieu_lat: lieu.lat ?? null,
           lieu_lng: lieu.lng ?? null,
           prix_jour: parseFloat(prix),
-          photos_urls: photosUrls, equipements, description,
+          description,
         }
       } else {
         body = {
-          vehicule_transporteur_id: serviceType === 'covoiturage' ? selectedVehiculeId : undefined,
+          vehicule_transporteur_id: selectedVehiculeId,
           type: serviceType,
           depart_label: departLabel,
           depart_lat: depart.lat ?? null,
@@ -421,6 +366,7 @@ export default function PublierPage() {
   }
 
   const typeLabel = { covoiturage: 'Covoiturage', colis: 'Transport de colis (par avion)', location: 'Location de véhicule' }[serviceType]
+  const selectedVehicule = vehicules.find(v => v.id === selectedVehiculeId)
 
   return (
     <>
@@ -435,22 +381,28 @@ export default function PublierPage() {
 
       <form onSubmit={handleSubmit} style={{ maxWidth: 640 }}>
         <div className="card card-pad" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="field">
+            <label className="field-label">Véhicule utilisé pour cette annonce</label>
+            <select className="select" value={selectedVehiculeId} onChange={e => {
+              const id = e.target.value
+              setSelectedVehiculeId(id)
+              if (serviceType === 'covoiturage') {
+                const capacity = vehicules.find(v => v.id === id)?.nb_places ?? 1
+                setPlacesDispo(String(Math.min(Number(placesDispo), capacity)))
+              }
+            }} required>
+              {vehicules
+                .filter(v => serviceType !== 'covoiturage' || v.statut_verification === 'vérifié')
+                .map(v => (
+                  <option key={v.id} value={v.id}>
+                    {v.marque && v.modele ? `${v.marque} ${v.modele}` : 'Véhicule'}{v.type_vehicule ? ` (${v.type_vehicule})` : ''}{v.plaque ? ` — ${v.plaque}` : ''}
+                  </option>
+                ))}
+            </select>
+            <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>Les caractéristiques du véhicule se gèrent dans « Mes véhicules ».</div>
+          </div>
           {serviceType !== 'location' ? (
             <>
-              {/* Sélecteur de véhicule (covoiturage uniquement) */}
-              {serviceType === 'covoiturage' && verifiedVehicules.length > 0 && (
-                <div className="field">
-                  <label className="field-label">Véhicule utilisé pour ce trajet</label>
-                  <select className="select" value={selectedVehiculeId} onChange={e => setSelectedVehiculeId(e.target.value)} required>
-                    {verifiedVehicules.map(v => (
-                      <option key={v.id} value={v.id}>
-                        {v.marque && v.modele ? `${v.marque} ${v.modele}` : 'Véhicule'}{v.type_vehicule ? ` (${v.type_vehicule})` : ''}{v.plaque ? ` — ${v.plaque}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div className="field">
                   <label className="field-label">Ville de départ</label>
@@ -507,7 +459,7 @@ export default function PublierPage() {
                     <div className="field">
                       <label className="field-label">Places disponibles</label>
                       <select className="select" value={placesDispo} onChange={e => setPlacesDispo(e.target.value)}>
-                        {[1, 2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n}</option>)}
+                        {Array.from({ length: selectedVehicule?.nb_places ?? 1 }, (_, index) => index + 1).map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
                     </div>
                   )}
@@ -544,49 +496,6 @@ export default function PublierPage() {
             </>
           ) : (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="field">
-                  <label className="field-label">Marque</label>
-                  <input className="input" type="text" value={marque} onChange={e => setMarque(e.target.value)} required placeholder="Ex: Toyota" />
-                </div>
-                <div className="field">
-                  <label className="field-label">Modèle</label>
-                  <input className="input" type="text" value={modele} onChange={e => setModele(e.target.value)} required placeholder="Ex: Land Cruiser" />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                <div className="field">
-                  <label className="field-label">Année</label>
-                  <input className="input" type="number" value={annee} onChange={e => setAnnee(e.target.value)} placeholder="Ex: 2019" />
-                </div>
-                <div className="field">
-                  <label className="field-label">Couleur</label>
-                  <input className="input" type="text" value={couleur} onChange={e => setCouleur(e.target.value)} placeholder="Ex: Blanc" />
-                </div>
-                <div className="field">
-                  <label className="field-label">Nb places</label>
-                  <input className="input" type="number" value={nbPlaces} onChange={e => setNbPlaces(e.target.value)} required min="1" />
-                </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="field">
-                  <label className="field-label">Carburant</label>
-                  <select className="select" value={carburant} onChange={e => setCarburant(e.target.value)}>
-                    <option value="">—</option>
-                    <option value="essence">Essence</option>
-                    <option value="diesel">Diesel</option>
-                    <option value="hybride">Hybride</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label className="field-label">Boîte</label>
-                  <select className="select" value={boite} onChange={e => setBoite(e.target.value)}>
-                    <option value="">—</option>
-                    <option value="manuelle">Manuelle</option>
-                    <option value="automatique">Automatique</option>
-                  </select>
-                </div>
-              </div>
               <div className="field">
                 <label className="field-label">Lieu de disponibilité</label>
                 <AddressAutocomplete
@@ -601,44 +510,6 @@ export default function PublierPage() {
               <div className="field">
                 <label className="field-label">Prix par jour (FCFA)</label>
                 <input className="input" type="number" value={prix} onChange={e => setPrix(e.target.value)} required placeholder="Ex: 25000" min="0" />
-              </div>
-              <div className="field">
-                <label className="field-label">Équipements <span style={{ color: 'var(--muted)', fontWeight: 400 }}>(optionnel)</span></label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px 16px', marginTop: 8 }}>
-                  {EQUIPEMENTS_VEHICULE.map(eq => (
-                    <label key={eq} className="checkbox-row">
-                      <input type="checkbox" checked={equipements.includes(eq)} onChange={() => toggleEquipement(eq)} />
-                      <span style={{ fontSize: 14 }}>{eq}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="field">
-                <label className="field-label">
-                  Photos du véhicule <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({photos.length}/5 — min 1)</span>
-                </label>
-                {photos.length > 0 && (
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
-                    {photos.map((file, i) => (
-                      <div key={i} style={{ position: 'relative', width: 90, height: 70 }}>
-                        <img src={URL.createObjectURL(file)} alt={`Photo ${i + 1}`}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid var(--line)' }} />
-                        <button type="button" onClick={() => removePhoto(i)}
-                          style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: 'var(--danger)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {photos.length < 5 && (
-                  <>
-                    <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handlePhotoChange} style={{ display: 'none' }} />
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-outline btn-sm">
-                      + Ajouter des photos
-                    </button>
-                  </>
-                )}
               </div>
             </>
           )}

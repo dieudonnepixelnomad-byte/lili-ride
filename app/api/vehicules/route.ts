@@ -3,21 +3,12 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
 const schema = z.object({
-  marque: z.string().min(1),
-  modele: z.string().min(1),
-  annee: z.number().int().min(1990).optional().nullable(),
-  couleur: z.string().optional().nullable(),
-  nb_places: z.number().int().min(1),
-  carburant: z.enum(['essence', 'diesel', 'hybride']).optional().nullable(),
-  boite: z.enum(['manuelle', 'automatique']).optional().nullable(),
+  vehicule_transporteur_id: z.string().uuid(),
   lieu_label: z.string().trim().min(2),
   lieu_lat: z.number().optional().nullable(),
   lieu_lng: z.number().optional().nullable(),
   prix_jour: z.number().positive(),
-  photos_urls: z.array(z.string()).min(1),
-  equipements: z.array(z.string()).optional().nullable(),
   description: z.string().optional().nullable(),
-  carte_grise_url: z.string().optional().nullable(),
 })
 
 export async function POST(req: NextRequest) {
@@ -49,14 +40,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Données invalides', details: parsed.error.flatten() }, { status: 400 })
   }
 
+  const { data: vehiculeProfil } = await supabase
+    .from('vehicules_transporteur')
+    .select('marque, modele, annee, couleur, carburant, boite, nb_places, equipements, carte_grise_url, photo_vehicule_url')
+    .eq('id', parsed.data.vehicule_transporteur_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!vehiculeProfil) {
+    return NextResponse.json({ error: 'Véhicule introuvable ou accès refusé' }, { status: 403 })
+  }
+  if (!vehiculeProfil.marque || !vehiculeProfil.modele || !vehiculeProfil.nb_places) {
+    return NextResponse.json({ error: 'Complétez la marque, le modèle et le nombre de places dans Mes véhicules avant de publier.' }, { status: 400 })
+  }
+
+  const photoUrl = vehiculeProfil.photo_vehicule_url
+    ? supabase.storage.from('photos').getPublicUrl(vehiculeProfil.photo_vehicule_url).data.publicUrl
+    : null
+
   const { data: vehicule, error } = await supabase
     .from('vehicules')
     .insert({
       ...parsed.data,
+      marque: vehiculeProfil.marque,
+      modele: vehiculeProfil.modele,
+      annee: vehiculeProfil.annee,
+      couleur: vehiculeProfil.couleur,
+      carburant: vehiculeProfil.carburant,
+      boite: vehiculeProfil.boite,
+      nb_places: vehiculeProfil.nb_places,
+      equipements: vehiculeProfil.equipements,
+      photos_urls: photoUrl ? [photoUrl] : [],
+      carte_grise_url: vehiculeProfil.carte_grise_url,
       user_id: user.id,
       disponible: true,
       statut: 'en_attente',
-      statut_carte_grise: parsed.data.carte_grise_url ? 'en_attente' : 'non_soumis',
+      statut_carte_grise: vehiculeProfil.carte_grise_url ? 'en_attente' : 'non_soumis',
     })
     .select()
     .single()

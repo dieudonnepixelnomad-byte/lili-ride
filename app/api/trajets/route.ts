@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 
 const schema = z.object({
-  vehicule_transporteur_id: z.string().uuid().optional().nullable(),
+  vehicule_transporteur_id: z.string().uuid(),
   type: z.enum(['covoiturage', 'colis']),
   depart_label: z.string().trim().min(2),
   depart_lat: z.number().optional().nullable(),
@@ -51,7 +51,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Données invalides', details: parsed.error.flatten() }, { status: 400 })
   }
 
-  // Covoiturage : permis + véhicule vérifié requis. Colis (par avion) : CNI seule suffit.
+  // Toutes les annonces sont associées à un véhicule existant du propriétaire.
+  const { data: vehicule } = await supabase
+    .from('vehicules_transporteur')
+    .select('statut_verification, nb_places')
+    .eq('id', parsed.data.vehicule_transporteur_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!vehicule) {
+    return NextResponse.json({ error: 'Véhicule introuvable ou accès refusé' }, { status: 403 })
+  }
+
+  // Covoiturage : permis + véhicule vérifié requis. Colis : véhicule existant requis.
   const extraFields: Record<string, unknown> = {}
   if (parsed.data.type === 'colis' && parsed.data.poids_max_kg) {
     // poids_dispo_kg initialisé à la capacité max déclarée
@@ -61,19 +73,11 @@ export async function POST(req: NextRequest) {
     if (profil.statut_permis !== 'vérifié') {
       return NextResponse.json({ error: 'Permis de conduire non vérifié' }, { status: 403 })
     }
-    if (!parsed.data.vehicule_transporteur_id) {
-      return NextResponse.json({ error: 'Véhicule requis' }, { status: 400 })
-    }
-
-    const { data: vehicule } = await supabase
-      .from('vehicules_transporteur')
-      .select('statut_verification, capacite_kg')
-      .eq('id', parsed.data.vehicule_transporteur_id)
-      .eq('user_id', user.id)
-      .single()
-
-    if (!vehicule || vehicule.statut_verification !== 'vérifié') {
+    if (vehicule.statut_verification !== 'vérifié') {
       return NextResponse.json({ error: 'Véhicule non vérifié ou introuvable' }, { status: 403 })
+    }
+    if (parsed.data.places_dispo && vehicule.nb_places && parsed.data.places_dispo > vehicule.nb_places) {
+      return NextResponse.json({ error: 'Le nombre de places disponibles dépasse la capacité du véhicule.' }, { status: 400 })
     }
   }
 

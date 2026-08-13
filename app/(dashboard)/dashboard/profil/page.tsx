@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import StatusBadge from '@/components/shared/StatusBadge'
 import Avatar from '@/components/shared/Avatar'
-import type { User, ProfilTransporteur, VehiculeTransporteur, TypeVehicule, TypeColis } from '@/types'
+import type { User, ProfilTransporteur, VehiculeTransporteur, TypeVehicule, TypeColis, Carburant, Boite } from '@/types'
 
 const VILLES = ['Douala', 'Yaoundé', 'Bafoussam', 'Autre']
 const TYPES_VEHICULE: TypeVehicule[] = ['Berline', 'SUV', 'Minibus', 'Camionnette', 'Moto']
@@ -30,6 +30,10 @@ interface VehiculeFormState {
   modele: string
   plaque: string
   nb_places: string
+  annee: string
+  couleur: string
+  carburant: Carburant | ''
+  boite: Boite | ''
   capacite_kg: string
   volume_m3: string
   types_colis_acceptes: TypeColis[]
@@ -47,6 +51,10 @@ function emptyVehiculeForm(): VehiculeFormState {
     modele: '',
     plaque: '',
     nb_places: '',
+    annee: '',
+    couleur: '',
+    carburant: '',
+    boite: '',
     capacite_kg: '',
     volume_m3: '',
     types_colis_acceptes: [],
@@ -316,6 +324,10 @@ export default function ProfilPage() {
       modele: v.modele ?? '',
       plaque: v.plaque ?? '',
       nb_places: v.nb_places != null ? String(v.nb_places) : '',
+      annee: v.annee != null ? String(v.annee) : '',
+      couleur: v.couleur ?? '',
+      carburant: v.carburant ?? '',
+      boite: v.boite ?? '',
       capacite_kg: v.capacite_kg != null ? String(v.capacite_kg) : '',
       volume_m3: v.volume_m3 != null ? String(v.volume_m3) : '',
       types_colis_acceptes: (v.types_colis_acceptes ?? []) as TypeColis[],
@@ -368,6 +380,10 @@ export default function ProfilPage() {
         modele: vehiculeForm.modele || null,
         plaque: vehiculeForm.plaque || null,
         nb_places: vehiculeForm.nb_places ? parseInt(vehiculeForm.nb_places) : null,
+        annee: vehiculeForm.annee ? parseInt(vehiculeForm.annee) : null,
+        couleur: vehiculeForm.couleur || null,
+        carburant: vehiculeForm.carburant || null,
+        boite: vehiculeForm.boite || null,
         capacite_kg: vehiculeForm.capacite_kg ? parseFloat(vehiculeForm.capacite_kg) : null,
         volume_m3: vehiculeForm.volume_m3 ? parseFloat(vehiculeForm.volume_m3) : null,
         types_colis_acceptes: vehiculeForm.types_colis_acceptes,
@@ -666,7 +682,7 @@ export default function ProfilPage() {
           {/* Section Véhicules */}
           <div>
             <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--ink)', marginBottom: 4 }}>Mes véhicules</div>
-            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>Pour le covoiturage et le transport de colis — chaque véhicule est vérifié indépendamment</div>
+            <div style={{ fontSize: 13, color: 'var(--ink-3)', marginBottom: 12 }}>Pour le covoiturage, le transport de colis et la location — les annonces utilisent un véhicule enregistré ici.</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <div />
               {!vehiculeForm && (
@@ -722,7 +738,7 @@ export default function ProfilPage() {
 
             {vehicules.length === 0 && !vehiculeForm && (
               <div className="card" style={{ padding: '32px 24px', textAlign: 'center', color: 'var(--ink-3)', fontSize: 14 }}>
-                Aucun véhicule enregistré. Ajoutez-en un pour pouvoir publier des trajets.
+                Aucun véhicule enregistré. Ajoutez-en un pour pouvoir publier une annonce.
               </div>
             )}
 
@@ -814,6 +830,35 @@ function VehiculeFormInline({ form, setForm, onSave, onCancel, saving, error, ca
           <label className="field-label">Volume m³</label>
           <input className="input" type="number" min="0" step="0.1" value={form.volume_m3} onChange={e => update({ volume_m3: e.target.value })} />
         </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+        <div className="field">
+          <label className="field-label">Année</label>
+          <input className="input" type="number" min="1990" value={form.annee} onChange={e => update({ annee: e.target.value })} placeholder="Ex: 2019" />
+        </div>
+        <div className="field">
+          <label className="field-label">Couleur</label>
+          <input className="input" value={form.couleur} onChange={e => update({ couleur: e.target.value })} placeholder="Ex: Blanc" />
+        </div>
+        <div className="field">
+          <label className="field-label">Carburant</label>
+          <select className="select" value={form.carburant} onChange={e => update({ carburant: e.target.value as Carburant | '' })}>
+            <option value="">—</option>
+            <option value="essence">Essence</option>
+            <option value="diesel">Diesel</option>
+            <option value="hybride">Hybride</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="field" style={{ maxWidth: 'calc((100% - 32px) / 3)' }}>
+        <label className="field-label">Boîte</label>
+        <select className="select" value={form.boite} onChange={e => update({ boite: e.target.value as Boite | '' })}>
+          <option value="">—</option>
+          <option value="manuelle">Manuelle</option>
+          <option value="automatique">Automatique</option>
+        </select>
       </div>
 
       <div className="field">

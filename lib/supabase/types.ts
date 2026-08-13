@@ -80,6 +80,10 @@ export interface Database {
           modele: string | null
           plaque: string | null
           nb_places: number | null
+          annee: number | null
+          couleur: string | null
+          carburant: 'essence' | 'diesel' | 'hybride' | null
+          boite: 'manuelle' | 'automatique' | null
           capacite_kg: number | null
           volume_m3: number | null
           types_colis_acceptes: string[] | null
@@ -100,6 +104,10 @@ export interface Database {
           modele?: string | null
           plaque?: string | null
           nb_places?: number | null
+          annee?: number | null
+          couleur?: string | null
+          carburant?: 'essence' | 'diesel' | 'hybride' | null
+          boite?: 'manuelle' | 'automatique' | null
           capacite_kg?: number | null
           volume_m3?: number | null
           types_colis_acceptes?: string[] | null
@@ -171,6 +179,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
+          vehicule_transporteur_id: string | null
           marque: string
           modele: string
           annee: number | null
@@ -197,6 +206,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
+          vehicule_transporteur_id?: string | null
           marque: string
           modele: string
           annee?: number | null

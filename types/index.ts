@@ -69,6 +69,10 @@ export interface VehiculeTransporteur {
   modele?: string
   plaque?: string
   nb_places?: number
+  annee?: number
+  couleur?: string
+  carburant?: Carburant
+  boite?: Boite
   capacite_kg?: number
   volume_m3?: number
   types_colis_acceptes?: TypeColis[]
@@ -117,6 +121,7 @@ export interface Trajet {
 export interface Vehicule {
   id: string
   user_id: string
+  vehicule_transporteur_id?: string
   marque: string
   modele: string
   annee?: number
