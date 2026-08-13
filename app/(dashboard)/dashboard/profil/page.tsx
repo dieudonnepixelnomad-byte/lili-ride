@@ -390,16 +390,19 @@ export default function ProfilPage() {
         equipements: vehiculeForm.equipements,
         carte_grise_url: carteGriseUrl,
         photo_vehicule_url: photoVehiculeUrl,
-        ...(soumettre ? { statut_verification: 'en_attente' as const } : {}),
+        // Toute modification d'un véhicule déjà créé doit être revue avant
+        // qu'il puisse de nouveau être utilisé dans une annonce vérifiée.
+        ...(soumettre || editingVehiculeId ? { statut_verification: 'en_attente' as const } : {}),
       }
 
       if (editingVehiculeId) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('vehicules_transporteur')
           .update(payload)
           .eq('id', editingVehiculeId)
           .select()
           .single()
+        if (error || !data) throw new Error(error?.message ?? 'La modification du véhicule a échoué.')
         setVehicules(vs => vs.map(v => v.id === editingVehiculeId ? (data as VehiculeTransporteur) : v))
       } else {
         const { data } = await supabase
@@ -704,23 +707,30 @@ export default function ProfilPage() {
                       <div style={{ fontSize: 13, color: 'var(--danger)', marginTop: 4 }}>{v.motif_rejet}</div>
                     )}
                   </div>
-                  {(v.statut_verification === 'non_soumis' || v.statut_verification === 'rejeté') && editingVehiculeId !== v.id && (
+                  {editingVehiculeId !== v.id && (
                     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                       <button type="button" className="btn btn-outline btn-sm" onClick={() => openEditVehicule(v)}>Modifier</button>
-                      <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}
-                        onClick={() => supprimerVehicule(v.id)}>
-                        Supprimer
-                      </button>
-                      <button type="button" className="btn btn-primary btn-sm"
-                        onClick={() => soumettreVehicule(v.id, v.carte_grise_url)}>
-                        Soumettre
-                      </button>
+                      {(v.statut_verification === 'non_soumis' || v.statut_verification === 'rejeté') && (
+                        <>
+                          <button type="button" className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}
+                            onClick={() => supprimerVehicule(v.id)}>
+                            Supprimer
+                          </button>
+                          <button type="button" className="btn btn-primary btn-sm"
+                            onClick={() => soumettreVehicule(v.id, v.carte_grise_url)}>
+                            Soumettre
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {editingVehiculeId === v.id && vehiculeForm && (
                   <div style={{ marginTop: 20, paddingTop: 20, borderTop: '1px solid var(--line)' }}>
+                    <div className="notice warn" style={{ marginBottom: 16 }}>
+                      Toute modification remet ce véhicule en attente de vérification.
+                    </div>
                     <VehiculeFormInline
                       form={vehiculeForm}
                       setForm={setVehiculeForm}
