@@ -32,7 +32,7 @@ export default async function AdminAnnoncesPage({ searchParams }: Props) {
   const selectedStatus = statusFilters.some(item => item.value === params.statut) ? params.statut ?? '' : ''
   const supabase = await createClient()
 
-  let trajetsQuery = supabase.from('trajets').select('*, users(nom)').order('created_at', { ascending: false })
+  let trajetsQuery = supabase.from('trajets').select('*, users!trajets_user_id_fkey(nom)').order('created_at', { ascending: false })
   let vehiculesQuery = supabase.from('vehicules').select('*, users!vehicules_user_id_fkey(nom)').order('created_at', { ascending: false })
   if (selectedStatus) {
     trajetsQuery = trajetsQuery.eq('statut', selectedStatus)
@@ -40,14 +40,16 @@ export default async function AdminAnnoncesPage({ searchParams }: Props) {
   }
 
   const [trajetsResult, vehiculesResult, pendingTrajetsResult, pendingVehiculesResult] = await Promise.all([
-    selectedType === 'vehicule' ? Promise.resolve({ data: [] }) : trajetsQuery,
-    selectedType === 'trajet' ? Promise.resolve({ data: [] }) : vehiculesQuery,
+    selectedType === 'vehicule' ? Promise.resolve({ data: [], error: null }) : trajetsQuery,
+    selectedType === 'trajet' ? Promise.resolve({ data: [], error: null }) : vehiculesQuery,
     supabase.from('trajets').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
     supabase.from('vehicules').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
   ])
 
   const trajets = trajetsResult.data ?? []
   const vehicules = vehiculesResult.data ?? []
+  if (trajetsResult.error) console.error('[admin/annonces] trajets query error:', trajetsResult.error)
+  if (vehiculesResult.error) console.error('[admin/annonces] vehicules query error:', vehiculesResult.error)
   const total = trajets.length + vehicules.length
   const pendingCount = (pendingTrajetsResult.count ?? 0) + (pendingVehiculesResult.count ?? 0)
 

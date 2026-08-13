@@ -71,7 +71,7 @@ export default async function AdminAnnonceDetailPage({ params }: Props) {
   if (type === 'trajet') {
     const { data: trajet } = await supabase
       .from('trajets')
-      .select('*, users(nom, telephone, whatsapp, email, ville, photo_url), vehicules_transporteur(marque, modele, plaque, type_vehicule)')
+      .select('*, users!trajets_user_id_fkey(nom, telephone, whatsapp, email, ville, photo_url), vehicules_transporteur(marque, modele, plaque, type_vehicule)')
       .eq('id', id)
       .single()
     if (!trajet) notFound()
