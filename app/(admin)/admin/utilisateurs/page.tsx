@@ -1,29 +1,32 @@
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
 import Avatar from '@/components/shared/Avatar'
-import type { User } from '@/types'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function AdminUtilisateursPage() {
+export default async function AdminUtilisateursPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams
+  const currentPage = getPage(params.page)
+  const pageSize = 20
   const supabase = await createClient()
 
-  const { data: users, error } = await supabase
+  const { data: users, error, count } = await supabase
     .from('users')
-    .select('id, nom, telephone, ville, role, created_at, profils_transporteur!profils_transporteur_user_id_fkey(statut_cni, statut_permis)')
+    .select('id, nom, telephone, ville, role, created_at, profils_transporteur!profils_transporteur_user_id_fkey(statut_cni, statut_permis)', { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
 
   return (
     <>
       <div className="page-head">
         <div>
           <h1 className="page-title">Utilisateurs</h1>
-          <p className="page-sub">{users?.length ?? 0} utilisateur{(users?.length ?? 0) > 1 ? 's' : ''} inscrits</p>
+          <p className="page-sub">{count ?? 0} utilisateur{(count ?? 0) > 1 ? 's' : ''} inscrits</p>
         </div>
       </div>
-
       <div className="card">
         {error ? (
           <div className="notice warn" style={{ margin: 22 }}>
@@ -76,6 +79,7 @@ export default async function AdminUtilisateursPage() {
           </table>
         )}
       </div>
+      <Pagination currentPage={currentPage} totalCount={count ?? 0} pageSize={pageSize} label="utilisateurs" buildHref={page => `/admin/utilisateurs?page=${page}`} />
     </>
   )
 }

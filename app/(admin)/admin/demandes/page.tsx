@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 
 interface Props {
-  searchParams: Promise<{ statut?: string; type?: string }>
+  searchParams: Promise<{ statut?: string; type?: string; page?: string }>
 }
 
 function formatDate(date: string) {
@@ -12,17 +13,19 @@ function formatDate(date: string) {
 
 export default async function AdminDemandesPage({ searchParams }: Props) {
   const params = await searchParams
+  const currentPage = getPage(params.page)
+  const pageSize = 20
   const supabase = await createClient()
 
   let query = supabase
     .from('demandes')
-    .select('*, trajets(depart_label, arrivee_label), vehicules(marque, modele)')
+    .select('*, trajets(depart_label, arrivee_label), vehicules(marque, modele)', { count: 'exact' })
     .order('created_at', { ascending: false })
 
   if (params.statut) query = query.eq('statut', params.statut)
   if (params.type) query = query.eq('type', params.type)
 
-  const { data: demandes } = await query
+  const { data: demandes, count } = await query.range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
 
   const filters = [
     { label: 'Toutes', href: '/admin/demandes' },
@@ -36,7 +39,7 @@ export default async function AdminDemandesPage({ searchParams }: Props) {
       <div className="page-head">
         <div>
           <h1 className="page-title">Demandes</h1>
-          <p className="page-sub">{demandes?.length ?? 0} demande{(demandes?.length ?? 0) > 1 ? 's' : ''}</p>
+          <p className="page-sub">{count ?? 0} demande{(count ?? 0) > 1 ? 's' : ''}</p>
         </div>
       </div>
 
@@ -87,6 +90,13 @@ export default async function AdminDemandesPage({ searchParams }: Props) {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={currentPage} totalCount={count ?? 0} pageSize={pageSize} label="demandes" buildHref={page => {
+        const search = new URLSearchParams()
+        if (params.statut) search.set('statut', params.statut)
+        if (params.type) search.set('type', params.type)
+        search.set('page', String(page))
+        return `/admin/demandes?${search.toString()}`
+      }} />
     </>
   )
 }

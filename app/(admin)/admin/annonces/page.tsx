@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 
 interface Props {
-  searchParams: Promise<{ type?: string; statut?: string }>
+  searchParams: Promise<{ type?: string; statut?: string; page?: string }>
 }
 
 const statusFilters = [
@@ -30,18 +31,20 @@ export default async function AdminAnnoncesPage({ searchParams }: Props) {
   const params = await searchParams
   const selectedType = ['trajet', 'vehicule'].includes(params.type ?? '') ? params.type! : ''
   const selectedStatus = statusFilters.some(item => item.value === params.statut) ? params.statut ?? '' : ''
+  const currentPage = getPage(params.page)
+  const pageSize = 10
   const supabase = await createClient()
 
-  let trajetsQuery = supabase.from('trajets').select('*, users!trajets_user_id_fkey(nom)').order('created_at', { ascending: false })
-  let vehiculesQuery = supabase.from('vehicules').select('*, users!vehicules_user_id_fkey(nom)').order('created_at', { ascending: false })
+  let trajetsQuery = supabase.from('trajets').select('*, users!trajets_user_id_fkey(nom)', { count: 'exact' }).order('created_at', { ascending: false })
+  let vehiculesQuery = supabase.from('vehicules').select('*, users!vehicules_user_id_fkey(nom)', { count: 'exact' }).order('created_at', { ascending: false })
   if (selectedStatus) {
     trajetsQuery = trajetsQuery.eq('statut', selectedStatus)
     vehiculesQuery = vehiculesQuery.eq('statut', selectedStatus)
   }
 
   const [trajetsResult, vehiculesResult, pendingTrajetsResult, pendingVehiculesResult] = await Promise.all([
-    selectedType === 'vehicule' ? Promise.resolve({ data: [], error: null }) : trajetsQuery,
-    selectedType === 'trajet' ? Promise.resolve({ data: [], error: null }) : vehiculesQuery,
+    selectedType === 'vehicule' ? Promise.resolve({ data: [], error: null, count: 0 }) : trajetsQuery.range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
+    selectedType === 'trajet' ? Promise.resolve({ data: [], error: null, count: 0 }) : vehiculesQuery.range((currentPage - 1) * pageSize, currentPage * pageSize - 1),
     supabase.from('trajets').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
     supabase.from('vehicules').select('*', { count: 'exact', head: true }).eq('statut', 'en_attente'),
   ])
@@ -50,7 +53,8 @@ export default async function AdminAnnoncesPage({ searchParams }: Props) {
   const vehicules = vehiculesResult.data ?? []
   if (trajetsResult.error) console.error('[admin/annonces] trajets query error:', trajetsResult.error)
   if (vehiculesResult.error) console.error('[admin/annonces] vehicules query error:', vehiculesResult.error)
-  const total = trajets.length + vehicules.length
+  const total = (trajetsResult.count ?? 0) + (vehiculesResult.count ?? 0)
+  const totalPages = Math.max(Math.ceil((trajetsResult.count ?? 0) / pageSize), Math.ceil((vehiculesResult.count ?? 0) / pageSize))
   const pendingCount = (pendingTrajetsResult.count ?? 0) + (pendingVehiculesResult.count ?? 0)
 
   return (
@@ -138,6 +142,7 @@ export default async function AdminAnnoncesPage({ searchParams }: Props) {
           </table>
         </div>
       )}
+      <Pagination currentPage={currentPage} totalCount={total} totalPages={totalPages} pageSize={pageSize} hideRange label="annonces" buildHref={page => filterHref(selectedType, selectedStatus) + `${selectedType || selectedStatus ? '&' : '?'}page=${page}`} />
     </>
   )
 }

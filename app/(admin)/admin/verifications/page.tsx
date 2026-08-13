@@ -2,12 +2,16 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import StatusBadge from '@/components/shared/StatusBadge'
 import Avatar from '@/components/shared/Avatar'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 
 function formatDate(date: string) {
   return new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default async function AdminVerificationsPage() {
+export default async function AdminVerificationsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams
+  const currentPage = getPage(params.page)
+  const pageSize = 10
   const supabase = await createClient()
 
   const [
@@ -33,17 +37,31 @@ export default async function AdminVerificationsPage() {
   if (vtError) console.error('[admin/verifications] vehicules_transporteur error:', vtError)
   if (vlError) console.error('[admin/verifications] vehicules error:', vlError)
 
-  const cniEnAttente = profils?.filter(p => p.statut_cni === 'en_attente') ?? []
-  const permisEnAttente = profils?.filter(p => p.statut_permis === 'en_attente') ?? []
-  const vtEnAttente = vehiculesTransporteur?.filter(v => v.statut_verification === 'en_attente') ?? []
-  const vlEnAttente = vehiculesLocation?.filter(v => v.statut_carte_grise === 'en_attente') ?? []
+  const cniEnAttenteItems = profils?.filter(p => p.statut_cni === 'en_attente') ?? []
+  const permisEnAttenteItems = profils?.filter(p => p.statut_permis === 'en_attente') ?? []
+  const vtEnAttenteItems = vehiculesTransporteur?.filter(v => v.statut_verification === 'en_attente') ?? []
+  const vlEnAttenteItems = vehiculesLocation?.filter(v => v.statut_carte_grise === 'en_attente') ?? []
 
-  const cniAutres = profils?.filter(p => p.statut_cni !== 'non_soumis' && p.statut_cni !== 'en_attente') ?? []
-  const permisAutres = profils?.filter(p => p.statut_permis !== 'non_soumis' && p.statut_permis !== 'en_attente') ?? []
-  const vtAutres = vehiculesTransporteur?.filter(v => v.statut_verification !== 'non_soumis' && v.statut_verification !== 'en_attente') ?? []
-  const vlAutres = vehiculesLocation?.filter(v => v.statut_carte_grise !== 'non_soumis' && v.statut_carte_grise !== 'en_attente') ?? []
+  const cniAutresItems = profils?.filter(p => p.statut_cni !== 'non_soumis' && p.statut_cni !== 'en_attente') ?? []
+  const permisAutresItems = profils?.filter(p => p.statut_permis !== 'non_soumis' && p.statut_permis !== 'en_attente') ?? []
+  const vtAutresItems = vehiculesTransporteur?.filter(v => v.statut_verification !== 'non_soumis' && v.statut_verification !== 'en_attente') ?? []
+  const vlAutresItems = vehiculesLocation?.filter(v => v.statut_carte_grise !== 'non_soumis' && v.statut_carte_grise !== 'en_attente') ?? []
 
-  const totalEnAttente = cniEnAttente.length + permisEnAttente.length + vtEnAttente.length + vlEnAttente.length
+  const pageStart = (currentPage - 1) * pageSize
+  const pageEnd = pageStart + pageSize
+  const cniEnAttente = cniEnAttenteItems.slice(pageStart, pageEnd)
+  const permisEnAttente = permisEnAttenteItems.slice(pageStart, pageEnd)
+  const vtEnAttente = vtEnAttenteItems.slice(pageStart, pageEnd)
+  const vlEnAttente = vlEnAttenteItems.slice(pageStart, pageEnd)
+  const cniAutres = cniAutresItems.slice(pageStart, pageEnd)
+  const permisAutres = permisAutresItems.slice(pageStart, pageEnd)
+  const vtAutres = vtAutresItems.slice(pageStart, pageEnd)
+  const vlAutres = vlAutresItems.slice(pageStart, pageEnd)
+
+  const totalEnAttente = cniEnAttenteItems.length + permisEnAttenteItems.length + vtEnAttenteItems.length + vlEnAttenteItems.length
+  const totalHistorique = cniAutresItems.length + permisAutresItems.length + vtAutresItems.length + vlAutresItems.length
+  const pendingPages = Math.max(...[cniEnAttenteItems, permisEnAttenteItems, vtEnAttenteItems, vlEnAttenteItems].map(items => Math.ceil(items.length / pageSize)))
+  const historyPages = Math.max(...[cniAutresItems, permisAutresItems, vtAutresItems, vlAutresItems].map(items => Math.ceil(items.length / pageSize)))
 
   type UserInfo = { nom: string; telephone: string; ville: string; photo_url?: string } | null
 
@@ -217,6 +235,8 @@ export default async function AdminVerificationsPage() {
         </>
       )}
 
+      <Pagination currentPage={currentPage} totalCount={totalEnAttente} totalPages={pendingPages} pageSize={pageSize} hideRange label="dossiers en attente" buildHref={page => `/admin/verifications?page=${page}`} />
+
       {totalEnAttente === 0 && (
         <div className="card" style={{ padding: '48px 24px', textAlign: 'center', color: 'var(--ink-3)', marginBottom: 32 }}>
           Aucun dossier en attente de vérification.
@@ -224,7 +244,7 @@ export default async function AdminVerificationsPage() {
       )}
 
       {/* Historique */}
-      {(cniAutres.length > 0 || permisAutres.length > 0 || vtAutres.length > 0 || vlAutres.length > 0) && (
+      {(cniAutresItems.length > 0 || permisAutresItems.length > 0 || vtAutresItems.length > 0 || vlAutresItems.length > 0) && (
         <>
           <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', marginBottom: 12 }}>Historique</div>
           <div className="card">
@@ -310,6 +330,7 @@ export default async function AdminVerificationsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination currentPage={currentPage} totalCount={totalHistorique} totalPages={historyPages} pageSize={pageSize} hideRange label="éléments d’historique" buildHref={page => `/admin/verifications?page=${page}`} />
         </>
       )}
     </>

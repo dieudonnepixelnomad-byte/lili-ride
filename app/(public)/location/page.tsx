@@ -2,25 +2,28 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import VehiculeCard from '@/components/shared/VehiculeCard'
 import SearchPanel from '@/components/shared/SearchPanel'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 import type { Vehicule } from '@/types'
 
 interface Props {
-  searchParams: Promise<{ depart?: string; date?: string }>
+  searchParams: Promise<{ depart?: string; date?: string; page?: string }>
 }
 
 export default async function LocationPage({ searchParams }: Props) {
   const params = await searchParams
+  const currentPage = getPage(params.page)
+  const pageSize = 12
   const supabase = await createClient()
 
   let query = supabase
     .from('vehicules')
-    .select('*, users!vehicules_user_id_fkey(id, nom, telephone, ville, photo_url)')
+    .select('*, users!vehicules_user_id_fkey(id, nom, telephone, ville, photo_url)', { count: 'exact' })
     .eq('statut', 'actif')
     .order('created_at', { ascending: false })
 
   if (params.depart) query = query.ilike('lieu_label', `%${params.depart}%`)
 
-  const { data: vehicules, error: vehiculesError } = await query
+  const { data: vehicules, error: vehiculesError, count } = await query.range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
   if (vehiculesError) console.error('[location] query error:', vehiculesError)
 
   return (
@@ -71,7 +74,7 @@ export default async function LocationPage({ searchParams }: Props) {
             <div>
               <div style={{ marginBottom: 24 }}>
                 <span style={{ color: 'var(--ink-3)', fontSize: 14 }}>
-                  {vehicules?.length ?? 0} véhicule{(vehicules?.length ?? 0) > 1 ? 's' : ''} trouvé{(vehicules?.length ?? 0) > 1 ? 's' : ''}
+                  {count ?? 0} véhicule{(count ?? 0) > 1 ? 's' : ''} trouvé{(count ?? 0) > 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -83,11 +86,20 @@ export default async function LocationPage({ searchParams }: Props) {
                   <Link href="/support" className="btn btn-primary" style={{ marginTop: 24 }}>Contacter le support</Link>
                 </div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-                  {(vehicules as Vehicule[]).map(v => (
-                    <VehiculeCard key={v.id} vehicule={v} />
-                  ))}
-                </div>
+                <>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
+                    {(vehicules as Vehicule[]).map(v => (
+                      <VehiculeCard key={v.id} vehicule={v} />
+                    ))}
+                  </div>
+                  <Pagination currentPage={currentPage} totalCount={count ?? 0} pageSize={pageSize} label="véhicules" buildHref={page => {
+                    const search = new URLSearchParams()
+                    if (params.depart) search.set('depart', params.depart)
+                    if (params.date) search.set('date', params.date)
+                    search.set('page', String(page))
+                    return `/location?${search.toString()}`
+                  }} />
+                </>
               )}
             </div>
           </div>

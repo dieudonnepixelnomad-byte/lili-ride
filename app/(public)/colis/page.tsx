@@ -2,19 +2,22 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import TrajetCard from '@/components/shared/TrajetCard'
 import SearchPanel from '@/components/shared/SearchPanel'
+import Pagination, { getPage } from '@/components/shared/Pagination'
 import type { Trajet } from '@/types'
 
 interface Props {
-  searchParams: Promise<{ depart?: string; arrivee?: string; date?: string }>
+  searchParams: Promise<{ depart?: string; arrivee?: string; date?: string; page?: string }>
 }
 
 export default async function ColisPage({ searchParams }: Props) {
   const params = await searchParams
+  const currentPage = getPage(params.page)
+  const pageSize = 12
   const supabase = await createClient()
 
   let query = supabase
     .from('trajets')
-    .select('*, users!trajets_user_id_fkey(id, nom, telephone, ville, photo_url)')
+    .select('*, users!trajets_user_id_fkey(id, nom, telephone, ville, photo_url)', { count: 'exact' })
     .eq('type', 'colis')
     .eq('statut', 'actif')
     .order('date_depart', { ascending: true })
@@ -23,7 +26,7 @@ export default async function ColisPage({ searchParams }: Props) {
   if (params.depart) query = query.ilike('depart_label', `%${params.depart}%`)
   if (params.arrivee) query = query.ilike('arrivee_label', `%${params.arrivee}%`)
 
-  const { data: trajets, error } = await query
+  const { data: trajets, error, count } = await query.range((currentPage - 1) * pageSize, currentPage * pageSize - 1)
   if (error) console.error('[colis] query error:', error)
 
   return (
@@ -68,7 +71,7 @@ export default async function ColisPage({ searchParams }: Props) {
             <div>
               <div style={{ marginBottom: 24 }}>
                 <span style={{ color: 'var(--ink-3)', fontSize: 14 }}>
-                  {trajets?.length ?? 0} trajet{(trajets?.length ?? 0) > 1 ? 's' : ''} trouvé{(trajets?.length ?? 0) > 1 ? 's' : ''}
+                  {count ?? 0} trajet{(count ?? 0) > 1 ? 's' : ''} trouvé{(count ?? 0) > 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -80,11 +83,21 @@ export default async function ColisPage({ searchParams }: Props) {
                   <Link href="/support" className="btn btn-primary" style={{ marginTop: 24 }}>Contacter le support</Link>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {(trajets as Trajet[]).map(trajet => (
-                    <TrajetCard key={trajet.id} trajet={trajet} />
-                  ))}
-                </div>
+                <>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    {(trajets as Trajet[]).map(trajet => (
+                      <TrajetCard key={trajet.id} trajet={trajet} />
+                    ))}
+                  </div>
+                  <Pagination currentPage={currentPage} totalCount={count ?? 0} pageSize={pageSize} label="trajets" buildHref={page => {
+                    const search = new URLSearchParams()
+                    if (params.depart) search.set('depart', params.depart)
+                    if (params.arrivee) search.set('arrivee', params.arrivee)
+                    if (params.date) search.set('date', params.date)
+                    search.set('page', String(page))
+                    return `/colis?${search.toString()}`
+                  }} />
+                </>
               )}
             </div>
           </div>
