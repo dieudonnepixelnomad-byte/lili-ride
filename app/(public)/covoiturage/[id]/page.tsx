@@ -22,7 +22,7 @@ export default async function CovoiturageDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, whatsapp, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule, plaque)')
+    .select('*, users!trajets_user_id_fkey(id, nom, telephone, whatsapp, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule, plaque)')
     .eq('id', id)
     .eq('type', 'covoiturage')
     .eq('statut', 'actif')

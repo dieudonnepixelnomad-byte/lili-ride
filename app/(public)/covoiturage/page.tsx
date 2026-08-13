@@ -14,7 +14,7 @@ export default async function CovoituragePage({ searchParams }: Props) {
 
   let query = supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule)')
+    .select('*, users!trajets_user_id_fkey(id, nom, telephone, ville, photo_url), vehicules_transporteur(id, nb_places, photo_vehicule_url, marque, modele, type_vehicule)')
     .eq('type', 'covoiturage')
     .eq('statut', 'actif')
     .order('date_depart', { ascending: true })
@@ -23,7 +23,8 @@ export default async function CovoituragePage({ searchParams }: Props) {
   if (params.depart) query = query.ilike('depart_label', `%${params.depart}%`)
   if (params.arrivee) query = query.ilike('arrivee_label', `%${params.arrivee}%`)
 
-  const { data: trajets } = await query
+  const { data: trajets, error } = await query
+  if (error) console.error('[covoiturage] query error:', error)
 
   return (
     <>

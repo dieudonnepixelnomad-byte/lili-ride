@@ -22,7 +22,7 @@ export default async function ColisDetailPage({ params }: Props) {
 
   const { data: trajet } = await supabase
     .from('trajets')
-    .select('*, poids_max_kg, poids_dispo_kg, prix_par_kg, users(id, nom, telephone, whatsapp, ville, photo_url)')
+    .select('*, poids_max_kg, poids_dispo_kg, prix_par_kg, users!trajets_user_id_fkey(id, nom, telephone, whatsapp, ville, photo_url)')
     .eq('id', id)
     .eq('type', 'colis')
     .eq('statut', 'actif')

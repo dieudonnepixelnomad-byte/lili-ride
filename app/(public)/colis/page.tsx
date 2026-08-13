@@ -14,7 +14,7 @@ export default async function ColisPage({ searchParams }: Props) {
 
   let query = supabase
     .from('trajets')
-    .select('*, users(id, nom, telephone, ville, photo_url)')
+    .select('*, users!trajets_user_id_fkey(id, nom, telephone, ville, photo_url)')
     .eq('type', 'colis')
     .eq('statut', 'actif')
     .order('date_depart', { ascending: true })
@@ -23,7 +23,8 @@ export default async function ColisPage({ searchParams }: Props) {
   if (params.depart) query = query.ilike('depart_label', `%${params.depart}%`)
   if (params.arrivee) query = query.ilike('arrivee_label', `%${params.arrivee}%`)
 
-  const { data: trajets } = await query
+  const { data: trajets, error } = await query
+  if (error) console.error('[colis] query error:', error)
 
   return (
     <>

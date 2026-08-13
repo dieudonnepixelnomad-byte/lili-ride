@@ -16,8 +16,6 @@ export default async function LocationPage({ searchParams }: Props) {
     .from('vehicules')
     .select('*, users!vehicules_user_id_fkey(id, nom, telephone, ville, photo_url)')
     .eq('statut', 'actif')
-    .eq('statut_carte_grise', 'vérifié')
-    .eq('disponible', true)
     .order('created_at', { ascending: false })
 
   if (params.depart) query = query.ilike('lieu_label', `%${params.depart}%`)
