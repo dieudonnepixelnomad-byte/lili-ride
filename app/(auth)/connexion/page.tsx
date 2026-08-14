@@ -16,6 +16,9 @@ export default function ConnexionPage() {
   const [loading, setLoading] = useState(false)
 
   const supabase = createClient()
+  // En production, l'URL canonique évite qu'un ancien domaine Vercel soit
+  // réutilisé comme callback OAuth lorsqu'il est encore ouvert dans un onglet.
+  const callbackUrl = `${(process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin).replace(/\/$/, '')}/api/auth/callback`
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -26,7 +29,7 @@ export default function ConnexionPage() {
         email,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+          emailRedirectTo: callbackUrl,
         },
       })
       if (error) throw error
@@ -73,7 +76,7 @@ export default function ConnexionPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: callbackUrl,
       },
     })
     if (error) setError(error.message)
@@ -145,10 +148,10 @@ export default function ConnexionPage() {
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
           >
             <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
-              <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24.3v9h13c-.6 3-2.3 5.5-4.9 7.2v6h7.9c4.6-4.3 7.2-10.6 7.2-17.5z" fill="#4285F4"/>
-              <path d="M24.3 48c6.5 0 12-2.2 16-5.9l-7.9-6c-2.2 1.5-5 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H3v6.2C7 42.6 15 48 24.3 48z" fill="#34A853"/>
-              <path d="M10.9 28.5c-.5-1.5-.8-3-.8-4.5s.3-3 .8-4.5V13.3H3A23.9 23.9 0 0 0 .3 24c0 3.9.9 7.5 2.7 10.7l7.9-6.2z" fill="#FBBC05"/>
-              <path d="M24.3 9.6c3.5 0 6.6 1.2 9 3.6l6.8-6.8C36.2 2.4 30.7 0 24.3 0 15 0 7 5.4 3 13.3l7.9 6.2c1.9-5.7 7.2-9.9 13.4-9.9z" fill="#EA4335"/>
+              <path d="M47.5 24.5c0-1.6-.1-3.2-.4-4.7H24.3v9h13c-.6 3-2.3 5.5-4.9 7.2v6h7.9c4.6-4.3 7.2-10.6 7.2-17.5z" fill="#4285F4" />
+              <path d="M24.3 48c6.5 0 12-2.2 16-5.9l-7.9-6c-2.2 1.5-5 2.3-8.1 2.3-6.2 0-11.5-4.2-13.4-9.9H3v6.2C7 42.6 15 48 24.3 48z" fill="#34A853" />
+              <path d="M10.9 28.5c-.5-1.5-.8-3-.8-4.5s.3-3 .8-4.5V13.3H3A23.9 23.9 0 0 0 .3 24c0 3.9.9 7.5 2.7 10.7l7.9-6.2z" fill="#FBBC05" />
+              <path d="M24.3 9.6c3.5 0 6.6 1.2 9 3.6l6.8-6.8C36.2 2.4 30.7 0 24.3 0 15 0 7 5.4 3 13.3l7.9 6.2c1.9-5.7 7.2-9.9 13.4-9.9z" fill="#EA4335" />
             </svg>
             Continuer avec Google
           </button>
